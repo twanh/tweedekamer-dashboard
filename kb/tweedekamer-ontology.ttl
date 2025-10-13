@@ -1,0 +1,441 @@
+@prefix : <http://www.semanticweb.org/twanh/ontologies/2025/9/tk/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xml: <http://www.w3.org/XML/1998/namespace> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@base <http://www.semanticweb.org/twanh/ontologies/2025/9/tk/> .
+
+<http://www.semanticweb.org/twanh/ontologies/2025/9/TK> rdf:type owl:Ontology .
+
+#################################################################
+#    Object Properties
+#################################################################
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#heeftGestemdOp
+:heeftGestemdOp rdf:type owl:ObjectProperty ;
+                rdfs:subPropertyOf owl:topObjectProperty ;
+                owl:inverseOf :isUitgebrachtDoor ;
+                rdfs:domain :Actor ;
+                rdfs:range :Stemming .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#heeftLid
+:heeftLid rdf:type owl:ObjectProperty ;
+          rdfs:subPropertyOf owl:topObjectProperty ;
+          owl:inverseOf :isLidVan ;
+          rdfs:domain :Fractie ;
+          rdfs:range :Persoon .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#heeftOnderwerp
+:heeftOnderwerp rdf:type owl:ObjectProperty ;
+                rdfs:subPropertyOf owl:topObjectProperty ;
+                owl:inverseOf :heeftZaak ;
+                rdfs:domain :Zaak ;
+                rdfs:range :Onderwerp .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#heeftStemming
+:heeftStemming rdf:type owl:ObjectProperty ;
+               rdfs:subPropertyOf owl:topObjectProperty ;
+               owl:inverseOf :isStemmingOver ;
+               rdfs:domain :Zaak ;
+               rdfs:range :Stemming .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#heeftZaak
+:heeftZaak rdf:type owl:ObjectProperty ;
+           rdfs:subPropertyOf owl:topObjectProperty ;
+           rdfs:domain :Onderwerp ;
+           rdfs:range :Zaak .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#isLidVan
+:isLidVan rdf:type owl:ObjectProperty ;
+          rdfs:subPropertyOf owl:topObjectProperty ;
+          rdfs:domain :Persoon ;
+          rdfs:range :Fractie .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#isStemmingOver
+:isStemmingOver rdf:type owl:ObjectProperty ;
+                rdfs:subPropertyOf owl:topObjectProperty ;
+                rdfs:domain :Stemming ;
+                rdfs:range :Zaak .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#isUitgebrachtDoor
+:isUitgebrachtDoor rdf:type owl:ObjectProperty ;
+                   rdfs:subPropertyOf owl:topObjectProperty ;
+                   rdfs:domain :Stemming ;
+                   rdfs:range :Actor .
+
+
+#################################################################
+#    Data properties
+#################################################################
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#aantalStemmen
+:aantalStemmen rdf:type owl:DatatypeProperty ;
+               rdfs:subPropertyOf owl:topDataProperty ;
+               rdfs:domain :Fractie ;
+               rdfs:range xsd:integer .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#aantalZetels
+:aantalZetels rdf:type owl:DatatypeProperty ;
+              rdfs:subPropertyOf owl:topDataProperty ;
+              rdfs:domain :Fractie ;
+              rdfs:range xsd:integer .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#afkorting
+:afkorting rdf:type owl:DatatypeProperty ;
+           rdfs:subPropertyOf owl:topDataProperty ;
+           rdfs:domain :Fractie ;
+           rdfs:range xsd:string .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#beschrijving
+:beschrijving rdf:type owl:DatatypeProperty ;
+              rdfs:subPropertyOf owl:topDataProperty ;
+              rdfs:domain :Zaak ;
+              rdfs:range xsd:string ;
+              rdfs:comment "Maps to \"Ondwerp\" from OData \"Zaak\" but renamed to avoid confusioin with Onderwerp from topic classifier." .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#besluitResultaat
+:besluitResultaat rdf:type owl:DatatypeProperty ;
+                  rdfs:subPropertyOf owl:topDataProperty ;
+                  rdfs:domain :Zaak ;
+                  rdfs:range xsd:string .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#besluitStemmingSoort
+:besluitStemmingSoort rdf:type owl:DatatypeProperty ;
+                      rdfs:subPropertyOf owl:topDataProperty ;
+                      rdfs:domain :Zaak ;
+                      rdfs:range xsd:string .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#datumActief
+:datumActief rdf:type owl:DatatypeProperty ;
+             rdfs:subPropertyOf owl:topDataProperty ;
+             rdfs:domain :Fractie ;
+             rdfs:range xsd:dateTime .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#datumInactief
+:datumInactief rdf:type owl:DatatypeProperty ;
+               rdfs:subPropertyOf owl:topDataProperty ;
+               rdfs:domain :Fractie ;
+               rdfs:range xsd:dateTime .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#dossierNummer
+:dossierNummer rdf:type owl:DatatypeProperty ;
+               rdfs:subPropertyOf owl:topDataProperty ;
+               rdfs:domain :Zaak ;
+               rdfs:range xsd:string .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#fractieGrooteOpMomentVanStemming
+:fractieGrooteOpMomentVanStemming rdf:type owl:DatatypeProperty ;
+                                  rdfs:subPropertyOf owl:topDataProperty ;
+                                  rdfs:domain :Stemming ;
+                                  rdfs:range xsd:integer .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#geboortedatum
+:geboortedatum rdf:type owl:DatatypeProperty ;
+               rdfs:subPropertyOf owl:topDataProperty ;
+               rdfs:domain :Persoon ;
+               rdfs:range xsd:dateTime .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#geboorteland
+:geboorteland rdf:type owl:DatatypeProperty ;
+              rdfs:subPropertyOf owl:topDataProperty ;
+              rdfs:domain :Persoon ;
+              rdfs:range xsd:string .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#geboorteplaats
+:geboorteplaats rdf:type owl:DatatypeProperty ;
+                rdfs:subPropertyOf owl:topDataProperty ;
+                rdfs:domain :Persoon ;
+                rdfs:range xsd:string .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#geslacht
+:geslacht rdf:type owl:DatatypeProperty ;
+          rdfs:subPropertyOf owl:topDataProperty ;
+          rdfs:domain :Persoon ;
+          rdfs:range xsd:string .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#indieningsDatum
+:indieningsDatum rdf:type owl:DatatypeProperty ;
+                 rdfs:domain :Zaak ;
+                 rdfs:range xsd:dateTime ;
+                 rdfs:comment "Called \"GestartOp\" in OData" .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#isAfgedaan
+:isAfgedaan rdf:type owl:DatatypeProperty ;
+            rdfs:subPropertyOf owl:topDataProperty ;
+            rdfs:domain :Zaak ;
+            rdfs:range xsd:boolean .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#kabinetsappreciatie
+:kabinetsappreciatie rdf:type owl:DatatypeProperty ;
+                     rdfs:subPropertyOf owl:topDataProperty ;
+                     rdfs:domain :Zaak ;
+                     rdfs:range xsd:string .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#naam
+:naam rdf:type owl:DatatypeProperty ;
+      rdfs:subPropertyOf owl:topDataProperty ;
+      rdfs:domain :Actor ;
+      rdfs:range xsd:string .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#nummer
+:nummer rdf:type owl:DatatypeProperty ;
+        rdfs:subPropertyOf owl:topDataProperty ;
+        rdfs:domain :Actor ,
+                    :Zaak ;
+        rdfs:range xsd:string .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#onderwerpType
+:onderwerpType rdf:type owl:DatatypeProperty ;
+               rdfs:domain :Onderwerp ;
+               rdfs:range xsd:string .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#stemmingSoort
+:stemmingSoort rdf:type owl:DatatypeProperty ;
+               rdfs:subPropertyOf owl:topDataProperty ;
+               rdfs:domain :Stemming ;
+               rdfs:range xsd:string .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#termijn
+:termijn rdf:type owl:DatatypeProperty ;
+         rdfs:subPropertyOf owl:topDataProperty ;
+         rdfs:domain :Zaak ;
+         rdfs:range xsd:dateTime ;
+         rdfs:comment "Is the \"end date\" of a Zaak" .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#titel
+:titel rdf:type owl:DatatypeProperty ;
+       rdfs:subPropertyOf owl:topDataProperty ;
+       rdfs:domain :Zaak ;
+       rdfs:range xsd:string .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#uuid
+:uuid rdf:type owl:DatatypeProperty ;
+      rdfs:subPropertyOf owl:topDataProperty ;
+      rdfs:domain :Actor ,
+                  :Zaak ;
+      rdfs:range xsd:string .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#volgnummer
+:volgnummer rdf:type owl:DatatypeProperty ;
+            rdfs:subPropertyOf owl:topDataProperty ;
+            rdfs:domain :Zaak ;
+            rdfs:range xsd:string .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#woonplaats
+:woonplaats rdf:type owl:DatatypeProperty ;
+            rdfs:subPropertyOf owl:topDataProperty ;
+            rdfs:domain :Persoon ;
+            rdfs:range xsd:string .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#zaakSoort
+:zaakSoort rdf:type owl:DatatypeProperty ;
+           rdfs:subPropertyOf owl:topDataProperty ;
+           rdfs:domain :Zaak ;
+           rdfs:range xsd:string .
+
+
+###  http://www.w3.org/2002/07/owl#topDataProperty
+owl:topDataProperty rdfs:domain :Persoon ;
+                    rdfs:range xsd:string .
+
+
+#################################################################
+#    Classes
+#################################################################
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#Actor
+:Actor rdf:type owl:Class .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#BinnenlandseZakenKoninkrijksrelaties
+:BinnenlandseZakenKoninkrijksrelaties rdf:type owl:Class ;
+                                      rdfs:subClassOf :Onderwerp .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#BuitenlandseZakenEnDefensie
+:BuitenlandseZakenEnDefensie rdf:type owl:Class ;
+                             rdfs:subClassOf :Onderwerp .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#EconomieEnFinancien
+:EconomieEnFinancien rdf:type owl:Class ;
+                     rdfs:subClassOf :Onderwerp .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#Fractie
+:Fractie rdf:type owl:Class ;
+         rdfs:subClassOf :Actor ;
+         owl:disjointWith :Persoon .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#InfrastructuurEnWaterstaat
+:InfrastructuurEnWaterstaat rdf:type owl:Class ;
+                            rdfs:subClassOf :Onderwerp .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#InitiatiefWetgeving
+:InitiatiefWetgeving rdf:type owl:Class ;
+                     owl:equivalentClass [ rdf:type owl:Restriction ;
+                                           owl:onProperty :zaakSoort ;
+                                           owl:hasValue "Initiatief Wetgeving"
+                                         ] ;
+                     rdfs:subClassOf :Zaak .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#JustitieEnVeiligheid
+:JustitieEnVeiligheid rdf:type owl:Class ;
+                      rdfs:subClassOf :Onderwerp .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#KlimaatEnEnergie
+:KlimaatEnEnergie rdf:type owl:Class ;
+                  rdfs:subClassOf :Onderwerp .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#LandbouwEnNatuur
+:LandbouwEnNatuur rdf:type owl:Class ;
+                  rdfs:subClassOf :Onderwerp .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#Onderwerp
+:Onderwerp rdf:type owl:Class .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#OnderwijsCultuurEnWetenschap
+:OnderwijsCultuurEnWetenschap rdf:type owl:Class ;
+                              rdfs:subClassOf :Onderwerp .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#Persoon
+:Persoon rdf:type owl:Class ;
+         rdfs:subClassOf :Actor .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#SocialeZakenEnWerkgelegenheid
+:SocialeZakenEnWerkgelegenheid rdf:type owl:Class ;
+                               rdfs:subClassOf :Onderwerp .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#StemNietDeelgenomen
+:StemNietDeelgenomen rdf:type owl:Class ;
+                     owl:equivalentClass [ rdf:type owl:Restriction ;
+                                           owl:onProperty :stemmingSoort ;
+                                           owl:hasValue "Niet deelgenomen"
+                                         ] ;
+                     rdfs:subClassOf :Stemming .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#StemTegen
+:StemTegen rdf:type owl:Class ;
+           owl:equivalentClass [ rdf:type owl:Restriction ;
+                                 owl:onProperty :stemmingSoort ;
+                                 owl:hasValue "Tegen"
+                               ] ;
+           rdfs:subClassOf :Stemming .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#StemVoor
+:StemVoor rdf:type owl:Class ;
+          owl:equivalentClass [ rdf:type owl:Restriction ;
+                                owl:onProperty :stemmingSoort ;
+                                owl:hasValue "Voor"
+                              ] ;
+          rdfs:subClassOf :Stemming .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#Stemming
+:Stemming rdf:type owl:Class .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#VolksgezondheidEnZorg
+:VolksgezondheidEnZorg rdf:type owl:Class ;
+                       rdfs:subClassOf :Onderwerp .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#Zaak
+:Zaak rdf:type owl:Class .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/tk/Amendement
+:Amendement rdf:type owl:Class ;
+            owl:equivalentClass [ rdf:type owl:Restriction ;
+                                  owl:onProperty :zaakSoort ;
+                                  owl:hasValue "Amendement"
+                                ] ;
+            rdfs:subClassOf :Zaak .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/tk/Motie
+:Motie rdf:type owl:Class ;
+       owl:equivalentClass [ rdf:type owl:Restriction ;
+                             owl:onProperty :zaakSoort ;
+                             owl:hasValue "Motie"
+                           ] ;
+       rdfs:subClassOf :Zaak .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/tk/Wetsvoorstel
+:Wetsvoorstel rdf:type owl:Class ;
+              owl:equivalentClass [ rdf:type owl:Restriction ;
+                                    owl:onProperty :zaakSoort ;
+                                    owl:hasValue "Wetsvoorstel"
+                                  ] ;
+              rdfs:subClassOf :Zaak .
+
+
+#################################################################
+#    General axioms
+#################################################################
+
+[ rdf:type owl:AllDisjointClasses ;
+  owl:members ( :InitiatiefWetgeving
+                :Amendement
+                :Motie
+                :Wetsvoorstel
+              )
+] .
+
+
+[ rdf:type owl:AllDisjointClasses ;
+  owl:members ( :StemNietDeelgenomen
+                :StemTegen
+                :StemVoor
+              )
+] .
+
+
+###  Generated by the OWL API (version 4.5.29.2024-05-13T12:11:03Z) https://github.com/owlcs/owlapi
