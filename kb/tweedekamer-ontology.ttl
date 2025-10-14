@@ -313,16 +313,28 @@ owl:topDataProperty rdfs:domain :Persoon ;
 
 ###  http://www.semanticweb.org/twanh/ontologies/2025/9/tk/BinnenlandseZakenKoninkrijksrelaties
 :BinnenlandseZakenKoninkrijksrelaties rdf:type owl:Class ;
+                                      owl:equivalentClass [ rdf:type owl:Restriction ;
+                                                            owl:onProperty :onderwerpType ;
+                                                            owl:hasValue "Binnenlandse Zaken en Koninkrijksrelaties"
+                                                          ] ;
                                       rdfs:subClassOf :Onderwerp .
 
 
 ###  http://www.semanticweb.org/twanh/ontologies/2025/9/tk/BuitenlandseZakenEnDefensie
 :BuitenlandseZakenEnDefensie rdf:type owl:Class ;
+                             owl:equivalentClass [ rdf:type owl:Restriction ;
+                                                   owl:onProperty :onderwerpType ;
+                                                   owl:hasValue "Buitenlandse Zaken en Defensie"
+                                                 ] ;
                              rdfs:subClassOf :Onderwerp .
 
 
 ###  http://www.semanticweb.org/twanh/ontologies/2025/9/tk/EconomieEnFinancien
 :EconomieEnFinancien rdf:type owl:Class ;
+                     owl:equivalentClass [ rdf:type owl:Restriction ;
+                                           owl:onProperty :onderwerpType ;
+                                           owl:hasValue "Economie en Financien"
+                                         ] ;
                      rdfs:subClassOf :Onderwerp .
 
 
@@ -334,6 +346,10 @@ owl:topDataProperty rdfs:domain :Persoon ;
 
 ###  http://www.semanticweb.org/twanh/ontologies/2025/9/tk/InfrastructuurEnWaterstaat
 :InfrastructuurEnWaterstaat rdf:type owl:Class ;
+                            owl:equivalentClass [ rdf:type owl:Restriction ;
+                                                  owl:onProperty :onderwerpType ;
+                                                  owl:hasValue "Infrastructuur en Waterstaat"
+                                                ] ;
                             rdfs:subClassOf :Onderwerp .
 
 
@@ -348,16 +364,28 @@ owl:topDataProperty rdfs:domain :Persoon ;
 
 ###  http://www.semanticweb.org/twanh/ontologies/2025/9/tk/JustitieEnVeiligheid
 :JustitieEnVeiligheid rdf:type owl:Class ;
+                      owl:equivalentClass [ rdf:type owl:Restriction ;
+                                            owl:onProperty :onderwerpType ;
+                                            owl:hasValue "Justitie en Veiligheid"
+                                          ] ;
                       rdfs:subClassOf :Onderwerp .
 
 
 ###  http://www.semanticweb.org/twanh/ontologies/2025/9/tk/KlimaatEnEnergie
 :KlimaatEnEnergie rdf:type owl:Class ;
+                  owl:equivalentClass [ rdf:type owl:Restriction ;
+                                        owl:onProperty :onderwerpType ;
+                                        owl:hasValue "Klimaat en Energie"
+                                      ] ;
                   rdfs:subClassOf :Onderwerp .
 
 
 ###  http://www.semanticweb.org/twanh/ontologies/2025/9/tk/LandbouwEnNatuur
 :LandbouwEnNatuur rdf:type owl:Class ;
+                  owl:equivalentClass [ rdf:type owl:Restriction ;
+                                        owl:onProperty :onderwerpType ;
+                                        owl:hasValue "Landbouw en Natuur"
+                                      ] ;
                   rdfs:subClassOf :Onderwerp .
 
 
@@ -376,6 +404,10 @@ owl:topDataProperty rdfs:domain :Persoon ;
 
 ###  http://www.semanticweb.org/twanh/ontologies/2025/9/tk/OnderwijsCultuurEnWetenschap
 :OnderwijsCultuurEnWetenschap rdf:type owl:Class ;
+                              owl:equivalentClass [ rdf:type owl:Restriction ;
+                                                    owl:onProperty :onderwerpType ;
+                                                    owl:hasValue "Onderwijs Cultuur en Wetenschap"
+                                                  ] ;
                               rdfs:subClassOf :Onderwerp .
 
 
@@ -386,6 +418,10 @@ owl:topDataProperty rdfs:domain :Persoon ;
 
 ###  http://www.semanticweb.org/twanh/ontologies/2025/9/tk/SocialeZakenEnWerkgelegenheid
 :SocialeZakenEnWerkgelegenheid rdf:type owl:Class ;
+                               owl:equivalentClass [ rdf:type owl:Restriction ;
+                                                     owl:onProperty :onderwerpType ;
+                                                     owl:hasValue "Sociale Zaken en Werkgelegenheid"
+                                                   ] ;
                                rdfs:subClassOf :Onderwerp .
 
 
@@ -395,6 +431,10 @@ owl:topDataProperty rdfs:domain :Persoon ;
 
 ###  http://www.semanticweb.org/twanh/ontologies/2025/9/tk/VolksgezondheidEnZorg
 :VolksgezondheidEnZorg rdf:type owl:Class ;
+                       owl:equivalentClass [ rdf:type owl:Restriction ;
+                                             owl:onProperty :onderwerpType ;
+                                             owl:hasValue "Volksgezondheid en Zorg"
+                                           ] ;
                        rdfs:subClassOf :Onderwerp .
 
 
@@ -420,6 +460,21 @@ owl:topDataProperty rdfs:domain :Persoon ;
                 :InitiatiefWetgeving
                 :Motie
                 :Wetsvoorstel
+              )
+] .
+
+
+[ rdf:type owl:AllDisjointClasses ;
+  owl:members ( :BinnenlandseZakenKoninkrijksrelaties
+                :BuitenlandseZakenEnDefensie
+                :EconomieEnFinancien
+                :InfrastructuurEnWaterstaat
+                :JustitieEnVeiligheid
+                :KlimaatEnEnergie
+                :LandbouwEnNatuur
+                :OnderwijsCultuurEnWetenschap
+                :SocialeZakenEnWerkgelegenheid
+                :VolksgezondheidEnZorg
               )
 ] .
 
