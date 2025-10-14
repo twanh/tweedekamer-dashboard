@@ -1,237 +1,199 @@
 from dataclasses import dataclass, field
+from typing import List, Optional
 from datetime import datetime
-from typing import Optional, list
-from __future__ import annotations
 
-# --- Base Classes ---
+# --- Forward Declarations for Inter-Class Relationships ---
+# We use forward references (strings) for type hinting classes that are defined later.
 
 @dataclass
 class Actor:
     """
-    Base class for any entity that performs an action (Persoon or Fractie).
-    Corresponds to the :Actor class in the ontology.
+    De basis entiteit voor entiteiten die kunnen stemmen of initiëren,
+    zoals een Persoon of een Fractie.
+    Corresponds to the :Actor class.
     """
-    uuid: str
-    naam: str
-    nummer: str
-    # Object properties from the ontology:
-    # :heeftGestemdOp is handled via the Stemming class's 'uitgebracht_door' field.
-    # We omit it here to simplify the base class.
+    naam: str = field()
+    nummer: Optional[str] = field(default=None)
+    uuid: Optional[str] = field(default=None)
 
 
 @dataclass
 class Onderwerp:
     """
-    Represents a specific topic or subject area.
-    Corresponds to the :Onderwerp class, which has many specific subclasses.
+    Een verzameling van thematische onderwerpen waaronder Zaken vallen.
+    Corresponds to the :Onderwerp class.
     """
-    # The 'onderwerpType' is the only core data property defined on this class.
-    onderwerp_type: Optional[str] = field(default=None)
+    # Datatype Properties
+    onderwerp_type: Optional[str] = field(default=None) # :onderwerpType
 
-
-@dataclass
-class Stemming:
-    """
-    Represents a vote or voting result (StemVoor, StemTegen, etc.).
-    Corresponds to the :Stemming class.
-    """
-    stemming_soort: Optional[str] = field(default=None)
-    fractie_groote_op_moment_van_stemming: Optional[int] = field(default=None)
-
-    # Object properties (Relationships):
-    zaak: Optional[Zaak] = field(default=None)
-    uitgebracht_door: Optional[Actor] = field(default=None)
+    # Object Properties (Relationships)
+    zaken: List['Zaak'] = field(default_factory=list) # Inverse of :heeftOnderwerp
 
 
 @dataclass
 class Zaak:
     """
-    Represents a matter, item, or proposal (Wetsvoorstel, Motie, etc.).
+    Een Kamerstuk of een ander proces, zoals een Motie of Wetsvoorstel.
     Corresponds to the :Zaak class.
     """
-    uuid: str
-    nummer: str
-    titel: Optional[str] = field(default=None)
-    beschrijving: Optional[str] = field(default=None)  # Maps to "Ondwerp" in OData
-    dossier_nummer: Optional[str] = field(default=None)
-    volgnummer: Optional[str] = field(default=None)
-    zaak_soort: Optional[str] = field(default=None) # Defined implicitly by subclasses
-    indienings_datum: Optional[datetime] = field(default=None)  # Called "GestartOp" in OData
-    termijn: Optional[datetime] = field(default=None)
-    is_afgedaan: Optional[bool] = field(default=None)
-    kabinets_appreciatie: Optional[str] = field(default=None)
-    besluit_resultaat: Optional[str] = field(default=None)
-    besluit_stemming_soort: Optional[str] = field(default=None)
+    # Datatype Properties
+    titel: str = field()                                   # :titel
+    zaak_soort: str = field()                              # :zaakSoort
+    dossier_nummer: str = field()                          # :dossierNummer
+    uuid: Optional[str] = field(default=None)              # :uuid
+    nummer: Optional[str] = field(default=None)            # :nummer
+    volgnummer: Optional[str] = field(default=None)        # :volgnummer
+    beschrijving: Optional[str] = field(default=None)      # :beschrijving (OData "Onderwerp")
+    indienings_datum: Optional[datetime] = field(default=None) # :indieningsDatum (OData "GestartOp")
+    termijn: Optional[datetime] = field(default=None)      # :termijn (End date)
+    besluit_resultaat: Optional[str] = field(default=None) # :besluitResultaat
+    besluit_stemming_soort: Optional[str] = field(default=None) # :besluitStemmingSoort
+    is_afgedaan: bool = field(default=False)               # :isAfgedaan
+    kabinets_appreciatie: Optional[str] = field(default=None) # :kabinetsappreciatie
 
-    # Object properties (Relationships):
-    onderwerpen: list[Onderwerp] = field(default_factory=list)
-    stemmingen: list[Stemming] = field(default_factory=list)
+    # Object Properties (Relationships)
+    onderwerpen: List[Onderwerp] = field(default_factory=list) # :heeftOnderwerp
+    stemmingen: List['Stemming'] = field(default_factory=list) # :heeftStemming
+
+
+@dataclass
+class Stemming:
+    """
+    Een specifieke stemming over een Zaak.
+    Corresponds to the :Stemming class.
+    """
+    # Datatype Properties
+    stemming_soort: Optional[str] = field(default=None)              # :stemmingSoort
+    fractie_groote_op_moment_van_stemming: Optional[int] = field(default=None) # :fractieGrooteOpMomentVanStemming
+
+    # Object Properties (Relationships)
+    is_stemming_over: Zaak = field()                  # :isStemmingOver
+    uitgebracht_door: Actor = field()                # :isUitgebrachtDoor (Inverse of :heeftGestemdOp)
+
+    # Note: The object properties like :heeftVoorGestemd, :heeftTegenGestemd, etc.
+    # are subproperties of :heeftGestemdOp and describe the *result* of the
+    # stemming event relative to the Zaak, but are defined on the Actor.
+    # In a data model, this result is best captured by the overall collection
+    # of Stemming objects linked to the Zaak.
 
 
 # --- Subclasses of Actor ---
 
 @dataclass
-class Fractie(Actor):
+class Persoon(Actor):
     """
-    Represents a political faction/party.
-    Corresponds to the :Fractie class, subclass of :Actor.
+    Een individueel lid van de Tweede Kamer.
+    Corresponds to the :Persoon class, subclass of :Actor.
     """
-    aantal_stemmen: Optional[int] = field(default=None)
-    aantal_zetels: Optional[int] = field(default=None)
-    afkorting: Optional[str] = field(default=None)
-    datum_actief: Optional[datetime] = field(default=None)
-    datum_inactief: Optional[datetime] = field(default=None)
+    # Datatype Properties
+    geboortedatum: Optional[datetime] = field(default=None)   # :geboortedatum
+    geboorteland: Optional[str] = field(default=None)        # :geboorteland
+    geboorteplaats: Optional[str] = field(default=None)      # :geboorteplaats
+    geslacht: Optional[str] = field(default=None)            # :geslacht
+    woonplaats: Optional[str] = field(default=None)          # :woonplaats
 
-    # Object properties (Relationship: :heeftLid)
-    leden: list[Persoon] = field(default_factory=list)
+    # Object Properties (Relationships)
+    is_lid_van: Optional['Fractie'] = field(default=None)     # :isLidVan (Range is Fractie)
 
 
 @dataclass
-class Persoon(Actor):
+class Fractie(Actor):
     """
-    Represents an individual person, typically an MP.
-    Corresponds to the :Persoon class, subclass of :Actor.
+    Een politieke partij of fractie.
+    Corresponds to the :Fractie class, subclass of :Actor.
     """
-    geboortedatum: Optional[datetime] = field(default=None)
-    geboorteland: Optional[str] = field(default=None)
-    geboorteplaats: Optional[str] = field(default=None)
-    geslacht: Optional[str] = field(default=None)
-    woonplaats: Optional[str] = field(default=None)
+    # Datatype Properties
+    afkorting: Optional[str] = field(default=None)      # :afkorting
+    aantal_zetels: Optional[int] = field(default=None)  # :aantalZetels
+    aantal_stemmen: Optional[int] = field(default=None) # :aantalStemmen
+    datum_actief: Optional[datetime] = field(default=None) # :datumActief
+    datum_inactief: Optional[datetime] = field(default=None) # :datumInactief
 
-    # Object properties (Relationship: :isLidVan)
-    fractie: Optional[Fractie] = field(default=None)
+    # Object Properties (Relationships)
+    leden: List[Persoon] = field(default_factory=list) # :heeftLid (Inverse of :isLidVan)
 
 
-# --- Subclasses of Zaak (Matter Types) ---
-# These mainly inherit properties from Zaak but define a specific zaak_soort.
+# --- Subclasses of Zaak ---
 
 @dataclass
 class Amendement(Zaak):
-    """Corresponds to :Amendement, where zaakSoort="Amendement"."""
-    pass
+    """
+    Een Amendement, een subclass van Zaak met vaste zaakSoort="Amendement".
+    """
+    zaak_soort: str = field(default="Amendement", init=False)
+
 
 @dataclass
 class Motie(Zaak):
-    """Corresponds to :Motie, where zaakSoort="Motie"."""
-    pass
+    """
+    Een Motie, een subclass van Zaak met vaste zaakSoort="Motie".
+    """
+    zaak_soort: str = field(default="Motie", init=False)
+
 
 @dataclass
 class Wetsvoorstel(Zaak):
-    """Corresponds to :Wetsvoorstel, where zaakSoort="Wetsvoorstel"."""
-    pass
+    """
+    Een Wetsvoorstel, een subclass van Zaak met vaste zaakSoort="Wetsvoorstel".
+    """
+    zaak_soort: str = field(default="Wetsvoorstel", init=False)
+
 
 @dataclass
-class IntiatiefWetgeving(Zaak):
-    """Corresponds to :InitiatiefWetgeving, where zaakSoort="Initiatief Wetgeving"."""
-    pass
+class InitiatiefWetgeving(Zaak):
+    """
+    Initiatief Wetgeving, een subclass van Zaak met vaste zaakSoort="Initiatief Wetgeving".
+    """
+    zaak_soort: str = field(default="Initiatief Wetgeving", init=False)
 
 
-# --- Subclasses of Stemming (Vote Types) ---
-# These inherit properties from Stemming but define a specific stemmingSoort.
+# --- Example Usage (Optional) ---
 
-@dataclass
-class StemVoor(Stemming):
-    """Corresponds to :StemVoor, where stemmingSoort="Voor"."""
-    pass
+def main():
+    # 1. Create a Fractie and a Persoon
+    pvda_fractie = Fractie(
+        naam="Partij van de Arbeid (PvdA)",
+        afkorting="PvdA",
+        aantal_zetels=9,
+        nummer="25",
+    )
 
-@dataclass
-class StemTegen(Stemming):
-    """Corresponds to :StemTegen, where stemmingSoort="Tegen"."""
-    pass
+    lid_diederik = Persoon(
+        naam="Diederik Samsom",
+        geboortedatum=datetime(1971, 7, 31),
+        geslacht="M",
+        is_lid_van=pvda_fractie,
+        nummer="250",
+    )
+    pvda_fractie.leden.append(lid_diederik)
 
-@dataclass
-class StemNietDeelgenomen(Stemming):
-    """Corresponds to :StemNietDeelgenomen, where stemmingSoort="Niet deelgenomen"."""
-    pass
+    # 2. Create an Onderwerp
+    economie_onderwerp = Onderwerp(onderwerp_type="EconomieEnFinancien")
+
+    # 3. Create a Zaak (Motie)
+    motie_titel = "Motie over het verlagen van de belasting op arbeid"
+    motie = Motie(
+        titel=motie_titel,
+        dossier_nummer="34550",
+        indienings_datum=datetime(2025, 10, 10),
+        is_afgedaan=False,
+    )
+    motie.onderwerpen.append(economie_onderwerp)
+
+    # 4. Create a Stemming on the Zaak
+    stemming_voor = Stemming(
+        is_stemming_over=motie,
+        uitgebracht_door=lid_diederik,
+        stemming_soort="Voor",
+        fractie_groote_op_moment_van_stemming=9,
+    )
+    motie.stemmingen.append(stemming_voor)
+
+    print(f"Fractie: {pvda_fractie.naam} ({pvda_fractie.afkorting})")
+    print(f"Lid: {lid_diederik.naam}, Lid van: {lid_diederik.is_lid_van.afkorting}")
+    print(f"Zaak (Motie): {motie.titel}")
+    print(f"Stemming 1: Door {stemming_voor.uitgebracht_door.naam} ({stemming_voor.stemming_soort})")
 
 
-# --- Specific Onderwerp Subclasses (Included for completeness/hierarchy) ---
-# These can inherit from the base Onderwerp class if needed, but for most purposes,
-# the base Onderwerp class with the 'onderwerp_type' field is sufficient.
-
-@dataclass
-class BinnenlandseZakenKoninkrijksrelaties(Onderwerp):
-    pass
-
-@dataclass
-class BuitenlandseZakenEnDefensie(Onderwerp):
-    pass
-
-@dataclass
-class EconomieEnFinancien(Onderwerp):
-    pass
-
-@dataclass
-class InfrastructuurEnWaterstaat(Onderwerp):
-    pass
-
-@dataclass
-class JustitieEnVeiligheid(Onderwerp):
-    pass
-
-@dataclass
-class KlimaatEnEnergie(Onderwerp):
-    pass
-
-@dataclass
-class LandbouwEnNatuur(Onderwerp):
-    pass
-
-@dataclass
-class OnderwijsCultuurEnWetenschap(Onderwerp):
-    pass
-
-@dataclass
-class SocialeZakenEnWerkgelegenheid(Onderwerp):
-    pass
-
-@dataclass
-class VolksgezondheidEnZorg(Onderwerp):
-    pass
-
-# Example usage (uncomment to test):
-# if __name__ == '__main__':
-#     # 1. Create a Zaak (matter)
-#     zaak = Motie(
-#         uuid="uuid-12345",
-#         nummer="35925-10",
-#         titel="Motie over het verbeteren van de ICT-veiligheid",
-#         zaak_soort="Motie",
-#         indienings_datum=datetime(2025, 10, 14),
-#         is_afgedaan=False,
-#     )
-#
-#     # 2. Create a Fractie (faction)
-#     fractie_pvd = Fractie(
-#         uuid="f-001",
-#         naam="Partij van de Vrijheid",
-#         nummer="1",
-#         afkorting="PvdV",
-#         aantal_zetels=15
-#     )
-#
-#     # 3. Create a Persoon (person)
-#     persoon_jansen = Persoon(
-#         uuid="p-001",
-#         naam="M. Jansen",
-#         nummer="999",
-#         geslacht="M",
-#         fractie=fractie_pvd,
-#     )
-#
-#     # 4. Link the Persoon to the Fractie
-#     fractie_pvd.leden.append(persoon_jansen)
-#
-#     # 5. Create a Stemming (vote)
-#     stemming = StemVoor(
-#         stemming_soort="Voor",
-#         zaak=zaak,
-#         uitgebracht_door=persoon_jansen,
-#     )
-#
-#     # 6. Link the Stemming to the Zaak
-#     zaak.stemmingen.append(stemming)
-#
-#     print(f"Zaak Titel: {zaak.titel}")
-#     print(f"Stemming door: {stemming.uitgebracht_door.naam}")
-#     print(f"Lid van fractie: {persoon_jansen.fractie.afkorting}")
+if __name__ == "__main__":
+    main()
