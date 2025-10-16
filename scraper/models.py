@@ -26,17 +26,24 @@ class StemmingKeuze(enum.Enum):
     NIET_DEELGENOMEN = 'Niet Deelgenomen'
 
 
+class OnderwerpType(enum.Enum):
+    BinnenlandseZakenKoninkrijksrelaties = 'Binnenlandse Zaken en Koninkrijksrelaties'  # noqa: E501
+    BuitenlandseZakenEnDefensie = 'Buitenlandse Zaken en Defensie'
+    EconomieEnFinancien = 'Economie en Financien'
+    InfrastructuurEnWaterstaat = 'Infrastructuur en Waterstaat'
+    JustitieEnVeiligheid = 'Justitie en Veiligheid'
+    KlimaatEnEnergie = 'Klimaat en Energie'
+    LandbouwEnNatuur = 'Landbouw en Natuur'
+    OnderwijsCultuurEnWetenschap = 'Onderwijs Cultuur en Wetenschap'
+    SocialeZakenEnWerkgelegenheid = 'Sociale Zaken en Werkgelegenheid'
+    VolksgezondheidEnZorg = 'Volksgezondheid en Zorg'
+
+    def __str__(self):
+        return self.value
+
+
 TK = Namespace('http://www.semanticweb.org/twanh/ontologies/2025/9/tk/')
 
-
-# Classes can link to each other
-# so we need forward declacrations in order to support type hinting
-# class Actor: pass
-# class Persoon(Actor): pass
-# class Fractie(Actor): pass
-# class Zaak: pass
-# class Stemming: pass
-# class Onderwerp: pass
 
 @dataclass
 class RdfModel:
@@ -55,7 +62,7 @@ class RdfModel:
         """
         # TODO: Test that the __name__ is correct here, otherwise:
         # pass class_name as parameter to get_uri
-        return TK[f'{__name__.lower()}/{self.uuid}']
+        return TK[f'{self.__class__.__name__.lower()}/{self.uuid}']
 
     def to_rdf(self, g: Graph) -> None:
         """
@@ -72,7 +79,8 @@ class Actor(RdfModel):
     """:Actor"""
 
     naam: Optional[str] = None
-    # TODO: This is defined in the ontology, but what does it reference to in the API?
+    # TODO: This is defined in the ontology,
+    # but what does it reference to in the API?
     nummer: Optional[str] = None
 
     # TODO: Add heeftGestemdOp?
@@ -82,10 +90,19 @@ class Actor(RdfModel):
         actor_uri = self.get_uri()
         g.add((actor_uri, RDF.type, TK.Actor))
         if self.naam:
-            g.add((actor_uri, TK.naam, Literal(self.naam, datatype=XSD.string)))
+            g.add(
+                (
+                    actor_uri,
+                    TK.naam,
+                    Literal(self.naam, datatype=XSD.string),
+                ),
+            )
         if self.nummer:
-            g.add((actor_uri, TK.nummer, Literal(
-                self.nummer, datatype=XSD.string)))
+            g.add((
+                actor_uri, TK.nummer, Literal(
+                    self.nummer, datatype=XSD.string,
+                ),
+            ))
 
 
 @dataclass
@@ -98,7 +115,7 @@ class Persoon(Actor):
     geslacht: Optional[str] = None
     woonplaats: Optional[str] = None
 
-    is_lid_van: Optional[Fractie] = None  # :isLidVan (Range is Fractie)
+    is_lid_van: Optional['Fractie'] = None  # :isLidVan (Range is Fractie)
 
     def to_rdf(self, g: Graph) -> None:
         persoon_uri = self.get_uri()
@@ -107,20 +124,35 @@ class Persoon(Actor):
         super().to_rdf(g)
 
         if self.geboortedatum:
-            g.add((persoon_uri, TK.geboortedatum, Literal(
-                self.geboortedatum.date(), datatype=XSD.date)))
+            g.add((
+                persoon_uri, TK.geboortedatum, Literal(
+                    self.geboortedatum.date(), datatype=XSD.date,
+                ),
+            ))
         if self.geboorteplaats:
-            g.add((persoon_uri, TK.geboorteplaats, Literal(
-                self.geboorteplaats, datatype=XSD.string)))
+            g.add((
+                persoon_uri, TK.geboorteplaats, Literal(
+                    self.geboorteplaats, datatype=XSD.string,
+                ),
+            ))
         if self.geboorteland:
-            g.add((persoon_uri, TK.geboorteland, Literal(
-                self.geboorteland, datatype=XSD.string)))
+            g.add((
+                persoon_uri, TK.geboorteland, Literal(
+                    self.geboorteland, datatype=XSD.string,
+                ),
+            ))
         if self.geslacht:
-            g.add((persoon_uri, TK.geslacht, Literal(
-                self.geslacht, datatype=XSD.string)))
+            g.add((
+                persoon_uri, TK.geslacht, Literal(
+                    self.geslacht, datatype=XSD.string,
+                ),
+            ))
         if self.woonplaats:
-            g.add((persoon_uri, TK.woonplaats, Literal(
-                self.woonplaats, datatype=XSD.string)))
+            g.add((
+                persoon_uri, TK.woonplaats, Literal(
+                    self.woonplaats, datatype=XSD.string,
+                ),
+            ))
         if self.is_lid_van:
             fractie_uri = self.is_lid_van.get_uri()
             g.add((persoon_uri, TK.isLidVan, fractie_uri))
@@ -141,7 +173,7 @@ class Fractie(Actor):
     # :heeftLid does not map to a single Persoon, but to multiple
     # so we use a list in the to_rdf method this is covnerted to
     # the proper relation.
-    leden: list[Persoon] = field(default_factory=list)
+    leden: list['Persoon'] = field(default_factory=list)
 
     def to_rdf(self, g: Graph) -> None:
         fractie_uri = self.get_uri()
@@ -151,18 +183,30 @@ class Fractie(Actor):
         super().to_rdf(g)
 
         if self.afkorting:
-            g.add((fractie_uri, TK.afkorting, Literal(
-                self.afkorting, datatype=XSD.string)))
+            g.add((
+                fractie_uri, TK.afkorting, Literal(
+                    self.afkorting, datatype=XSD.string,
+                ),
+            ))
         # Explicitly check for None to allow 0 zetels
         if self.aantal_zetels is not None:
-            g.add((fractie_uri, TK.aantalZetels, Literal(
-                self.aantal_zetels, datatype=XSD.integer)))
+            g.add((
+                fractie_uri, TK.aantalZetels, Literal(
+                    self.aantal_zetels, datatype=XSD.integer,
+                ),
+            ))
         if self.datum_actief:
-            g.add((fractie_uri, TK.datumActief, Literal(
-                self.datum_actief.date(), datatype=XSD.date)))
+            g.add((
+                fractie_uri, TK.datumActief, Literal(
+                    self.datum_actief.date(), datatype=XSD.date,
+                ),
+            ))
         if self.datum_inactief:
-            g.add((fractie_uri, TK.datumInactief, Literal(
-                self.datum_inactief.date(), datatype=XSD.date)))
+            g.add((
+                fractie_uri, TK.datumInactief, Literal(
+                    self.datum_inactief.date(), datatype=XSD.date,
+                ),
+            ))
 
         # Add for each lid the relationship :heeftLid
         for lid in self.leden:
@@ -195,8 +239,8 @@ class Zaak(RdfModel):
     zaak_soort: Optional[ZaakSoort] = None
 
     # Object properties
-    onderwerp: Optional[Onderwerp] = None
-    stemmingen: list[Stemming] = field(default_factory=list)
+    onderwerp: Optional['Onderwerp'] = None
+    stemmingen: list['Stemming'] = field(default_factory=list)
 
     def to_rdf(self, g: Graph):
 
@@ -210,43 +254,82 @@ class Zaak(RdfModel):
 
             # Use the enum's value for the data property literal
             g.add(
-                (zaak_uri,
-                 TK.zaakSoort,
-                 Literal(self.zaak_soort.value,
-                         datatype=XSD.string))
+                (
+                    zaak_uri,
+                    TK.zaakSoort,
+                    Literal(
+                        self.zaak_soort.value,
+                        datatype=XSD.string,
+                    ),
+                ),
             )
 
         if self.titel:
-            g.add((zaak_uri, TK.titel, Literal(self.titel, datatype=XSD.string)))
+            g.add(
+                (zaak_uri, TK.titel, Literal(self.titel, datatype=XSD.string)),
+            )
         if self.nummer:
-            g.add((zaak_uri, TK.nummer, Literal(self.nummer, datatype=XSD.string)))
+            g.add(
+                (
+                    zaak_uri,
+                    TK.nummer,
+                    Literal(self.nummer, datatype=XSD.string),
+                ),
+            )
         if self.dossier_nummer:
-            g.add((zaak_uri, TK.dossierNummer, Literal(
-                self.dossier_nummer, datatype=XSD.string)))
+            g.add((
+                zaak_uri, TK.dossierNummer, Literal(
+                    self.dossier_nummer, datatype=XSD.string,
+                ),
+            ))
         if self.volgnummer:
-            g.add((zaak_uri, TK.volgnummer, Literal(
-                self.volgnummer, datatype=XSD.string)))
+            g.add((
+                zaak_uri, TK.volgnummer, Literal(
+                    self.volgnummer, datatype=XSD.string,
+                ),
+            ))
         if self.beschrijving:
-            g.add((zaak_uri, TK.beschrijving, Literal(
-                self.beschrijving, datatype=XSD.string)))
+            g.add((
+                zaak_uri, TK.beschrijving, Literal(
+                    self.beschrijving, datatype=XSD.string,
+                ),
+            ))
         if self.indienings_datum:
-            g.add((zaak_uri, TK.indieningsDatum, Literal(
-                self.indienings_datum.date(), datatype=XSD.date)))
+            g.add((
+                zaak_uri, TK.indieningsDatum, Literal(
+                    self.indienings_datum.date(), datatype=XSD.date,
+                ),
+            ))
         if self.termijn:
-            g.add((zaak_uri, TK.termijn, Literal(
-                self.termijn.date(), datatype=XSD.date)))
+            g.add((
+                zaak_uri, TK.termijn, Literal(
+                    self.termijn.date(), datatype=XSD.date,
+                ),
+            ))
         if self.is_afgedaan is not None:
-            g.add((zaak_uri, TK.isAfgedaan, Literal(
-                self.is_afgedaan, datatype=XSD.boolean)))
+            g.add((
+                zaak_uri, TK.isAfgedaan, Literal(
+                    self.is_afgedaan, datatype=XSD.boolean,
+                ),
+            ))
         if self.kabinetsappreciatie:
-            g.add((zaak_uri, TK.kabinetsappreciatie, Literal(
-                self.kabinetsappreciatie, datatype=XSD.string)))
+            g.add((
+                zaak_uri, TK.kabinetsappreciatie, Literal(
+                    self.kabinetsappreciatie, datatype=XSD.string,
+                ),
+            ))
         if self.besluit_resultaat:
-            g.add((zaak_uri, TK.besluitResultaat, Literal(
-                self.besluit_resultaat, datatype=XSD.string)))
+            g.add((
+                zaak_uri, TK.besluitResultaat, Literal(
+                    self.besluit_resultaat, datatype=XSD.string,
+                ),
+            ))
         if self.besluit_stemming_soort:
-            g.add((zaak_uri, TK.besluitStemmingSoort, Literal(
-                self.besluit_stemming_soort, datatype=XSD.string)))
+            g.add((
+                zaak_uri, TK.besluitStemmingSoort, Literal(
+                    self.besluit_stemming_soort, datatype=XSD.string,
+                ),
+            ))
 
         if self.onderwerp:
             onderwerp_uri = self.onderwerp.get_uri()
@@ -272,15 +355,22 @@ class Stemming(RdfModel):
     fractie_grootte_op_moment_van_stemming: Optional[int] = None
 
     # Should this be optional?
-    is_stemming_over: Optional[Zaak] = None
+    is_stemming_over: Optional['Zaak'] = None
 
     # This field will hold the raw scraped voting data.
-    resultaten: list[tuple[Actor, StemmingKeuze]] = field(default_factory=list)
+    resultaten: list[
+        tuple['Actor', 'StemmingKeuze']
+    ] = field(default_factory=list)
 
     def to_rdf(self, g: Graph):
         """Adds RDF triples for this stemming instance to the graph."""
 
         stemming_uri = self.get_uri()
+        if not self.is_stemming_over:
+            raise ValueError(
+                'Stemming must be associated with a Zaak via is_stemming_over.',  # noqa: E501
+            )
+
         zaak_uri = self.is_stemming_over.get_uri()
 
         g.add((stemming_uri, RDF.type, TK.Stemming))
@@ -289,20 +379,26 @@ class Stemming(RdfModel):
         g.add((stemming_uri, TK.isStemmingOver, zaak_uri))
 
         if self.soort:
-            g.add((stemming_uri, TK.stemmingSoort, Literal(
-                self.soort, datatype=XSD.string)))
+            g.add((
+                stemming_uri, TK.stemmingSoort, Literal(
+                    self.soort, datatype=XSD.string,
+                ),
+            ))
 
         if self.fractie_grootte_op_moment_van_stemming is not None:
             g.add((
                 stemming_uri,
                 TK.fractieGrooteOpMomentVanStemming,
-                Literal(self.fractie_grootte_op_moment_van_stemming,
-                        datatype=XSD.integer)
+                Literal(
+                    self.fractie_grootte_op_moment_van_stemming,
+                    datatype=XSD.integer,
+                ),
             ))
 
         # Process the individual vote results
-        # The ontology links the Actor directly to the Zaak with a specific property
-        # (e.g., :heeftVoorGestemd), so we create those triples here.
+        # The ontology links the Actor directly to the Zaak with a
+        # specific property (e.g., :heeftVoorGestemd),
+        # so we create those triples here.
         for actor, keuze in self.resultaten:
             actor_uri = actor.get_uri()
             vote_property = None
@@ -320,3 +416,37 @@ class Stemming(RdfModel):
 
             # Ensure the Actor's own data is also added to the graph
             actor.to_rdf(g)
+
+
+@dataclass
+class Onderwerp(RdfModel):
+    """:Onderwerp"""
+
+    onderwerp_type: Optional[OnderwerpType] = None
+    zaken: list['Zaak'] = field(default_factory=list)
+
+    def to_rdf(self, g: Graph):
+        onderwerp_uri = self.get_uri()
+
+        g.add((onderwerp_uri, RDF.type, TK.Onderwerp))
+        if self.onderwerp_type:
+            g.add(
+                (
+                    onderwerp_uri,
+                    RDF.type,
+                    getattr(TK, self.onderwerp_type.name),
+                ),
+            )
+            g.add((
+                onderwerp_uri, TK.onderwerpType, Literal(
+                    self.onderwerp_type.value, datatype=XSD.string,
+                ),
+            ))
+
+        for zaak in self.zaken:
+            zaak_uri = zaak.get_uri()
+            g.add((onderwerp_uri, TK.heeftZaak, zaak_uri))
+            # Also add the inverse property from Zaak to Onderwerp
+            g.add((zaak_uri, TK.heeftOnderwerp, onderwerp_uri))
+            # Ensure the linked zaak's data is also added to the graph
+            zaak.to_rdf(g)
