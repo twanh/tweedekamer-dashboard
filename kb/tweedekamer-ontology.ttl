@@ -6,32 +6,11 @@
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @base <http://www.semanticweb.org/twanh/ontologies/2025/9/tk/> .
 
-<http://www.semanticweb.org/twanh/ontologies/2025/9/TK> rdf:type owl:Ontology .
+<http://www.semanticweb.org/twanh/ontologies/2025/9/tk> rdf:type owl:Ontology .
 
 #################################################################
 #    Object Properties
 #################################################################
-
-###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#heeftNietDeelgenomen
-:heeftNietDeelgenomen rdf:type owl:ObjectProperty ;
-                      rdfs:subPropertyOf :heeftGestemdOp ;
-                      rdfs:domain :Actor ;
-                      rdfs:range :Zaak .
-
-
-###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#heeftTegenGestemd
-:heeftTegenGestemd rdf:type owl:ObjectProperty ;
-                   rdfs:subPropertyOf :heeftGestemdOp ;
-                   rdfs:domain :Actor ;
-                   rdfs:range :Zaak .
-
-
-###  http://www.semanticweb.org/twanh/ontologies/2025/9/TK#heeftVoorGestemd
-:heeftVoorGestemd rdf:type owl:ObjectProperty ;
-                  rdfs:subPropertyOf :heeftGestemdOp ;
-                  rdfs:domain :Actor ;
-                  rdfs:range :Zaak .
-
 
 ###  http://www.semanticweb.org/twanh/ontologies/2025/9/tk/heeftGestemdOp
 :heeftGestemdOp rdf:type owl:ObjectProperty ;
@@ -49,6 +28,13 @@
           rdfs:range :Persoon .
 
 
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/tk/heeftNietDeelgenomen
+:heeftNietDeelgenomen rdf:type owl:ObjectProperty ;
+                      rdfs:subPropertyOf :heeftGestemdOp ;
+                      rdfs:domain :Actor ;
+                      rdfs:range :Zaak .
+
+
 ###  http://www.semanticweb.org/twanh/ontologies/2025/9/tk/heeftOnderwerp
 :heeftOnderwerp rdf:type owl:ObjectProperty ;
                 rdfs:subPropertyOf owl:topObjectProperty ;
@@ -63,6 +49,20 @@
                owl:inverseOf :isStemmingOver ;
                rdfs:domain :Zaak ;
                rdfs:range :Stemming .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/tk/heeftTegenGestemd
+:heeftTegenGestemd rdf:type owl:ObjectProperty ;
+                   rdfs:subPropertyOf :heeftGestemdOp ;
+                   rdfs:domain :Actor ;
+                   rdfs:range :Zaak .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/tk/heeftVoorGestemd
+:heeftVoorGestemd rdf:type owl:ObjectProperty ;
+                  rdfs:subPropertyOf :heeftGestemdOp ;
+                  rdfs:domain :Actor ;
+                  rdfs:range :Zaak .
 
 
 ###  http://www.semanticweb.org/twanh/ontologies/2025/9/tk/heeftZaak

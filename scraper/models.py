@@ -1,199 +1,322 @@
-from dataclasses import dataclass, field
-from typing import List, Optional
+import enum
+import uuid
+from dataclasses import dataclass
+from dataclasses import field
 from datetime import datetime
+from typing import Optional
 
-# --- Forward Declarations for Inter-Class Relationships ---
-# We use forward references (strings) for type hinting classes that are defined later.
-
-@dataclass
-class Actor:
-    """
-    De basis entiteit voor entiteiten die kunnen stemmen of initiëren,
-    zoals een Persoon of een Fractie.
-    Corresponds to the :Actor class.
-    """
-    naam: str = field()
-    nummer: Optional[str] = field(default=None)
-    uuid: Optional[str] = field(default=None)
+from rdflib import Graph
+from rdflib import Literal
+from rdflib import Namespace
+from rdflib import RDF
+from rdflib import URIRef
+from rdflib import XSD
 
 
-@dataclass
-class Onderwerp:
-    """
-    Een verzameling van thematische onderwerpen waaronder Zaken vallen.
-    Corresponds to the :Onderwerp class.
-    """
-    # Datatype Properties
-    onderwerp_type: Optional[str] = field(default=None) # :onderwerpType
-
-    # Object Properties (Relationships)
-    zaken: List['Zaak'] = field(default_factory=list) # Inverse of :heeftOnderwerp
+class ZaakSoort(enum.Enum):
+    MOTIE = 'Motie'
+    WETSVOORSTEL = 'Wetsvoorstel'
+    AMENDEMENT = 'Amendement'
+    INITIATIEF_WETGEVING = 'Initiatief Wetgeving'
 
 
-@dataclass
-class Zaak:
-    """
-    Een Kamerstuk of een ander proces, zoals een Motie of Wetsvoorstel.
-    Corresponds to the :Zaak class.
-    """
-    # Datatype Properties
-    titel: str = field()                                   # :titel
-    zaak_soort: str = field()                              # :zaakSoort
-    dossier_nummer: str = field()                          # :dossierNummer
-    uuid: Optional[str] = field(default=None)              # :uuid
-    nummer: Optional[str] = field(default=None)            # :nummer
-    volgnummer: Optional[str] = field(default=None)        # :volgnummer
-    beschrijving: Optional[str] = field(default=None)      # :beschrijving (OData "Onderwerp")
-    indienings_datum: Optional[datetime] = field(default=None) # :indieningsDatum (OData "GestartOp")
-    termijn: Optional[datetime] = field(default=None)      # :termijn (End date)
-    besluit_resultaat: Optional[str] = field(default=None) # :besluitResultaat
-    besluit_stemming_soort: Optional[str] = field(default=None) # :besluitStemmingSoort
-    is_afgedaan: bool = field(default=False)               # :isAfgedaan
-    kabinets_appreciatie: Optional[str] = field(default=None) # :kabinetsappreciatie
+class StemmingKeuze(enum.Enum):
+    VOOR = 'Voor'
+    TEGEN = 'Tegen'
+    NIET_DEELGENOMEN = 'Niet Deelgenomen'
 
-    # Object Properties (Relationships)
-    onderwerpen: List[Onderwerp] = field(default_factory=list) # :heeftOnderwerp
-    stemmingen: List['Stemming'] = field(default_factory=list) # :heeftStemming
 
+TK = Namespace('http://www.semanticweb.org/twanh/ontologies/2025/9/tk/')
+
+
+# Classes can link to each other
+# so we need forward declacrations in order to support type hinting
+# class Actor: pass
+# class Persoon(Actor): pass
+# class Fractie(Actor): pass
+# class Zaak: pass
+# class Stemming: pass
+# class Onderwerp: pass
 
 @dataclass
-class Stemming:
+class RdfModel:
     """
-    Een specifieke stemming over een Zaak.
-    Corresponds to the :Stemming class.
+    A base dataclass which the other models will inherit
+    to provde common URI generation.
     """
-    # Datatype Properties
-    stemming_soort: Optional[str] = field(default=None)              # :stemmingSoort
-    fractie_groote_op_moment_van_stemming: Optional[int] = field(default=None) # :fractieGrooteOpMomentVanStemming
 
-    # Object Properties (Relationships)
-    is_stemming_over: Zaak = field()                  # :isStemmingOver
-    uitgebracht_door: Actor = field()                # :isUitgebrachtDoor (Inverse of :heeftGestemdOp)
+    # Generate a new UUID for each instance if not provided
+    # Note: most TK models have their own ID's so this may not be used
+    uuid: str = field(default_factory=lambda: str(uuid.uuid4()))
 
-    # Note: The object properties like :heeftVoorGestemd, :heeftTegenGestemd, etc.
-    # are subproperties of :heeftGestemdOp and describe the *result* of the
-    # stemming event relative to the Zaak, but are defined on the Actor.
-    # In a data model, this result is best captured by the overall collection
-    # of Stemming objects linked to the Zaak.
+    def get_uri(self) -> URIRef:
+        """
+        Generate a URI for the instance based on its class name and UUID.
+        """
+        # TODO: Test that the __name__ is correct here, otherwise:
+        # pass class_name as parameter to get_uri
+        return TK[f'{__name__.lower()}/{self.uuid}']
+
+    def to_rdf(self, g: Graph) -> None:
+        """
+        Convert the instance to RDF and add it to the provided graph.
+
+        Note that `g` is passed by reference, so modifications to `g` will
+        be reflected outside this method.
+        """
+        raise NotImplementedError('Should be implemented by subclass')
 
 
-# --- Subclasses of Actor ---
+@dataclass
+class Actor(RdfModel):
+    """:Actor"""
+
+    naam: Optional[str] = None
+    # TODO: This is defined in the ontology, but what does it reference to in the API?
+    nummer: Optional[str] = None
+
+    # TODO: Add heeftGestemdOp?
+
+    def to_rdf(self, g: Graph) -> None:
+
+        actor_uri = self.get_uri()
+        g.add((actor_uri, RDF.type, TK.Actor))
+        if self.naam:
+            g.add((actor_uri, TK.naam, Literal(self.naam, datatype=XSD.string)))
+        if self.nummer:
+            g.add((actor_uri, TK.nummer, Literal(
+                self.nummer, datatype=XSD.string)))
+
 
 @dataclass
 class Persoon(Actor):
-    """
-    Een individueel lid van de Tweede Kamer.
-    Corresponds to the :Persoon class, subclass of :Actor.
-    """
-    # Datatype Properties
-    geboortedatum: Optional[datetime] = field(default=None)   # :geboortedatum
-    geboorteland: Optional[str] = field(default=None)        # :geboorteland
-    geboorteplaats: Optional[str] = field(default=None)      # :geboorteplaats
-    geslacht: Optional[str] = field(default=None)            # :geslacht
-    woonplaats: Optional[str] = field(default=None)          # :woonplaats
+    """:Persoon"""
 
-    # Object Properties (Relationships)
-    is_lid_van: Optional['Fractie'] = field(default=None)     # :isLidVan (Range is Fractie)
+    geboortedatum: Optional[datetime] = None
+    geboorteplaats: Optional[str] = None
+    geboorteland: Optional[str] = None
+    geslacht: Optional[str] = None
+    woonplaats: Optional[str] = None
+
+    is_lid_van: Optional[Fractie] = None  # :isLidVan (Range is Fractie)
+
+    def to_rdf(self, g: Graph) -> None:
+        persoon_uri = self.get_uri()
+        g.add((persoon_uri, RDF.type, TK.Persoon))
+        # Add properties from Actor
+        super().to_rdf(g)
+
+        if self.geboortedatum:
+            g.add((persoon_uri, TK.geboortedatum, Literal(
+                self.geboortedatum.date(), datatype=XSD.date)))
+        if self.geboorteplaats:
+            g.add((persoon_uri, TK.geboorteplaats, Literal(
+                self.geboorteplaats, datatype=XSD.string)))
+        if self.geboorteland:
+            g.add((persoon_uri, TK.geboorteland, Literal(
+                self.geboorteland, datatype=XSD.string)))
+        if self.geslacht:
+            g.add((persoon_uri, TK.geslacht, Literal(
+                self.geslacht, datatype=XSD.string)))
+        if self.woonplaats:
+            g.add((persoon_uri, TK.woonplaats, Literal(
+                self.woonplaats, datatype=XSD.string)))
+        if self.is_lid_van:
+            fractie_uri = self.is_lid_van.get_uri()
+            g.add((persoon_uri, TK.isLidVan, fractie_uri))
+            # Also add the inverse relationship
+            g.add((fractie_uri, TK.heeftLid, persoon_uri))
 
 
 @dataclass
 class Fractie(Actor):
-    """
-    Een politieke partij of fractie.
-    Corresponds to the :Fractie class, subclass of :Actor.
-    """
-    # Datatype Properties
-    afkorting: Optional[str] = field(default=None)      # :afkorting
-    aantal_zetels: Optional[int] = field(default=None)  # :aantalZetels
-    aantal_stemmen: Optional[int] = field(default=None) # :aantalStemmen
-    datum_actief: Optional[datetime] = field(default=None) # :datumActief
-    datum_inactief: Optional[datetime] = field(default=None) # :datumInactief
+    """:Fractie"""
 
-    # Object Properties (Relationships)
-    leden: List[Persoon] = field(default_factory=list) # :heeftLid (Inverse of :isLidVan)
+    afkorting: Optional[str] = None
+    aantal_zetels: Optional[int] = None
+    datum_actief: Optional[datetime] = None
+    datum_inactief: Optional[datetime] = None
 
+    # :heeftLid (Inverse of :isLidVan)
+    # :heeftLid does not map to a single Persoon, but to multiple
+    # so we use a list in the to_rdf method this is covnerted to
+    # the proper relation.
+    leden: list[Persoon] = field(default_factory=list)
 
-# --- Subclasses of Zaak ---
+    def to_rdf(self, g: Graph) -> None:
+        fractie_uri = self.get_uri()
+        g.add((fractie_uri, RDF.type, TK.Fractie))
+
+        # Add properties from Actor
+        super().to_rdf(g)
+
+        if self.afkorting:
+            g.add((fractie_uri, TK.afkorting, Literal(
+                self.afkorting, datatype=XSD.string)))
+        # Explicitly check for None to allow 0 zetels
+        if self.aantal_zetels is not None:
+            g.add((fractie_uri, TK.aantalZetels, Literal(
+                self.aantal_zetels, datatype=XSD.integer)))
+        if self.datum_actief:
+            g.add((fractie_uri, TK.datumActief, Literal(
+                self.datum_actief.date(), datatype=XSD.date)))
+        if self.datum_inactief:
+            g.add((fractie_uri, TK.datumInactief, Literal(
+                self.datum_inactief.date(), datatype=XSD.date)))
+
+        # Add for each lid the relationship :heeftLid
+        for lid in self.leden:
+            lid_uri = lid.get_uri()
+            g.add((fractie_uri, TK.heeftLid, lid_uri))
+            # Also add the inverse relationship
+            g.add((lid_uri, TK.isLidVan, fractie_uri))
+            # TODO: Should we also add the lid itself to the graph?
+
 
 @dataclass
-class Amendement(Zaak):
-    """
-    Een Amendement, een subclass van Zaak met vaste zaakSoort="Amendement".
-    """
-    zaak_soort: str = field(default="Amendement", init=False)
+class Zaak(RdfModel):
+    """:Zaak, also maps its subclasses"""
+
+    titel: Optional[str] = None
+    # TODO: Check that all these numbers are needed
+    # and add propper documentation on what they represent
+    nummer: Optional[str] = None
+    dossier_nummer: Optional[str] = None
+    volgnummer: Optional[str] = None
+    beschrijving: Optional[str] = None
+    indienings_datum: Optional[datetime] = None
+    termijn: Optional[datetime] = None
+    is_afgedaan: Optional[bool] = None
+    kabinetsappreciatie: Optional[str] = None
+
+    besluit_resultaat: Optional[str] = None
+    besluit_stemming_soort: Optional[str] = None  # TODO: Enum?
+
+    zaak_soort: Optional[ZaakSoort] = None
+
+    # Object properties
+    onderwerp: Optional[Onderwerp] = None
+    stemmingen: list[Stemming] = field(default_factory=list)
+
+    def to_rdf(self, g: Graph):
+
+        zaak_uri = self.get_uri()
+        g.add((zaak_uri, RDF.type, TK.Zaak))
+
+        if self.zaak_soort:
+            subclass_name = self.zaak_soort.name.replace('_', '')
+            if hasattr(TK, subclass_name):
+                g.add((zaak_uri, RDF.type, getattr(TK, subclass_name)))
+
+            # Use the enum's value for the data property literal
+            g.add(
+                (zaak_uri,
+                 TK.zaakSoort,
+                 Literal(self.zaak_soort.value,
+                         datatype=XSD.string))
+            )
+
+        if self.titel:
+            g.add((zaak_uri, TK.titel, Literal(self.titel, datatype=XSD.string)))
+        if self.nummer:
+            g.add((zaak_uri, TK.nummer, Literal(self.nummer, datatype=XSD.string)))
+        if self.dossier_nummer:
+            g.add((zaak_uri, TK.dossierNummer, Literal(
+                self.dossier_nummer, datatype=XSD.string)))
+        if self.volgnummer:
+            g.add((zaak_uri, TK.volgnummer, Literal(
+                self.volgnummer, datatype=XSD.string)))
+        if self.beschrijving:
+            g.add((zaak_uri, TK.beschrijving, Literal(
+                self.beschrijving, datatype=XSD.string)))
+        if self.indienings_datum:
+            g.add((zaak_uri, TK.indieningsDatum, Literal(
+                self.indienings_datum.date(), datatype=XSD.date)))
+        if self.termijn:
+            g.add((zaak_uri, TK.termijn, Literal(
+                self.termijn.date(), datatype=XSD.date)))
+        if self.is_afgedaan is not None:
+            g.add((zaak_uri, TK.isAfgedaan, Literal(
+                self.is_afgedaan, datatype=XSD.boolean)))
+        if self.kabinetsappreciatie:
+            g.add((zaak_uri, TK.kabinetsappreciatie, Literal(
+                self.kabinetsappreciatie, datatype=XSD.string)))
+        if self.besluit_resultaat:
+            g.add((zaak_uri, TK.besluitResultaat, Literal(
+                self.besluit_resultaat, datatype=XSD.string)))
+        if self.besluit_stemming_soort:
+            g.add((zaak_uri, TK.besluitStemmingSoort, Literal(
+                self.besluit_stemming_soort, datatype=XSD.string)))
+
+        if self.onderwerp:
+            onderwerp_uri = self.onderwerp.get_uri()
+            g.add((zaak_uri, TK.heeftOnderwerp, onderwerp_uri))
+            # Also add the inverse relationship
+            g.add((onderwerp_uri, TK.heeftZaak, zaak_uri))
+            # Add the Onderwerp itself to the graph
+            self.onderwerp.to_rdf(g)
+
+        for stemming in self.stemmingen:
+            stemming_uri = stemming.get_uri()
+            g.add((zaak_uri, TK.heeftStemming, stemming_uri))
+            # Also add the inverse relationship
+            g.add((stemming_uri, TK.isStemmingOver, zaak_uri))
+            # Add the Stemming itself to the graph
+            stemming.to_rdf(g)
 
 
 @dataclass
-class Motie(Zaak):
-    """
-    Een Motie, een subclass van Zaak met vaste zaakSoort="Motie".
-    """
-    zaak_soort: str = field(default="Motie", init=False)
+class Stemming(RdfModel):
 
+    soort: Optional[str] = None  # Maps to :stemmingSoort
+    fractie_grootte_op_moment_van_stemming: Optional[int] = None
 
-@dataclass
-class Wetsvoorstel(Zaak):
-    """
-    Een Wetsvoorstel, een subclass van Zaak met vaste zaakSoort="Wetsvoorstel".
-    """
-    zaak_soort: str = field(default="Wetsvoorstel", init=False)
+    # Should this be optional?
+    is_stemming_over: Optional[Zaak] = None
 
+    # This field will hold the raw scraped voting data.
+    resultaten: list[tuple[Actor, StemmingKeuze]] = field(default_factory=list)
 
-@dataclass
-class InitiatiefWetgeving(Zaak):
-    """
-    Initiatief Wetgeving, een subclass van Zaak met vaste zaakSoort="Initiatief Wetgeving".
-    """
-    zaak_soort: str = field(default="Initiatief Wetgeving", init=False)
+    def to_rdf(self, g: Graph):
+        """Adds RDF triples for this stemming instance to the graph."""
 
+        stemming_uri = self.get_uri()
+        zaak_uri = self.is_stemming_over.get_uri()
 
-# --- Example Usage (Optional) ---
+        g.add((stemming_uri, RDF.type, TK.Stemming))
+        # Add inverse link from Zaak to Stemming
+        g.add((zaak_uri, TK.heeftStemming, stemming_uri))
+        g.add((stemming_uri, TK.isStemmingOver, zaak_uri))
 
-def main():
-    # 1. Create a Fractie and a Persoon
-    pvda_fractie = Fractie(
-        naam="Partij van de Arbeid (PvdA)",
-        afkorting="PvdA",
-        aantal_zetels=9,
-        nummer="25",
-    )
+        if self.soort:
+            g.add((stemming_uri, TK.stemmingSoort, Literal(
+                self.soort, datatype=XSD.string)))
 
-    lid_diederik = Persoon(
-        naam="Diederik Samsom",
-        geboortedatum=datetime(1971, 7, 31),
-        geslacht="M",
-        is_lid_van=pvda_fractie,
-        nummer="250",
-    )
-    pvda_fractie.leden.append(lid_diederik)
+        if self.fractie_grootte_op_moment_van_stemming is not None:
+            g.add((
+                stemming_uri,
+                TK.fractieGrooteOpMomentVanStemming,
+                Literal(self.fractie_grootte_op_moment_van_stemming,
+                        datatype=XSD.integer)
+            ))
 
-    # 2. Create an Onderwerp
-    economie_onderwerp = Onderwerp(onderwerp_type="EconomieEnFinancien")
+        # Process the individual vote results
+        # The ontology links the Actor directly to the Zaak with a specific property
+        # (e.g., :heeftVoorGestemd), so we create those triples here.
+        for actor, keuze in self.resultaten:
+            actor_uri = actor.get_uri()
+            vote_property = None
 
-    # 3. Create a Zaak (Motie)
-    motie_titel = "Motie over het verlagen van de belasting op arbeid"
-    motie = Motie(
-        titel=motie_titel,
-        dossier_nummer="34550",
-        indienings_datum=datetime(2025, 10, 10),
-        is_afgedaan=False,
-    )
-    motie.onderwerpen.append(economie_onderwerp)
+            if keuze == StemmingKeuze.VOOR:
+                vote_property = TK.heeftVoorGestemd
+            elif keuze == StemmingKeuze.TEGEN:
+                vote_property = TK.heeftTegenGestemd
+            elif keuze == StemmingKeuze.NIET_DEELGENOMEN:
+                vote_property = TK.heeftNietDeelgenomen
 
-    # 4. Create a Stemming on the Zaak
-    stemming_voor = Stemming(
-        is_stemming_over=motie,
-        uitgebracht_door=lid_diederik,
-        stemming_soort="Voor",
-        fractie_groote_op_moment_van_stemming=9,
-    )
-    motie.stemmingen.append(stemming_voor)
+            if vote_property:
+                # Link the Actor directly to the Zaak with the vote type
+                g.add((actor_uri, vote_property, zaak_uri))
 
-    print(f"Fractie: {pvda_fractie.naam} ({pvda_fractie.afkorting})")
-    print(f"Lid: {lid_diederik.naam}, Lid van: {lid_diederik.is_lid_van.afkorting}")
-    print(f"Zaak (Motie): {motie.titel}")
-    print(f"Stemming 1: Door {stemming_voor.uitgebracht_door.naam} ({stemming_voor.stemming_soort})")
-
-
-if __name__ == "__main__":
-    main()
+            # Ensure the Actor's own data is also added to the graph
+            actor.to_rdf(g)
