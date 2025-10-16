@@ -10,6 +10,7 @@ from models import Stemming as StemmingModel
 from models import StemmingKeuze
 from models import Zaak as ZaakModel
 from models import ZaakSoort
+from models import ZaakSoort as ZaakSoortEnum
 from tkapi import TKApi
 from tkapi.fractie import Fractie as TkFractie
 from tkapi.fractie import FractieFilter
@@ -29,7 +30,7 @@ class TkScraper:
 
         self.logger = logging.getLogger(f'scraper.{self.__class__.__name__}')
 
-        # self._zaken: dict[str, ZaakModel] = {}
+        self._zaken: dict[str, ZaakModel] = {}
         self._fracties: dict[str, FractieModel] = {}
         self._personen: dict[str, PersoonModel] = {}
 
@@ -106,14 +107,73 @@ class TkScraper:
         # just return the dict
         return list(self._fracties.values())
 
+    def get_all_zaken(
+        self,
+        zaak_type: ZaakSoortEnum | None = None,
+        start_date: datetime.datetime | None = None,
+        end_date: datetime.datetime | None = None,
+    ) -> list[ZaakModel]:
+
+        self.logger.info(
+            f'Fetching all zaken with {zaak_type=}, {start_date=}, {end_date=}',
+        )
+
+        zaken_filter = Zaak.create_filter()
+        if start_date and end_date:
+            zaken_filter.filter_date_range(
+                start_datetime=start_date,
+                end_datetime=end_date,
+            )
+
+        if zaak_type:
+            # TODO: Make sure that the ZaakSoort enum matches the API values
+            zaken_filter.filter_soort(zaak_type.value)
+
+        zaken_data = self.api.get_zaken(filter=zaken_filter)
+
+        self.logger.info(f'Fetched {len(zaken_data)} zaken')
+        for zaak in zaken_data:
+            self.logger.debug(
+                f'Processing zaak: {zaak.nummer} - {zaak.onderwerp} ({zaak.soort})',
+            )
+
+            zaak_model = ZaakModel(
+                uuid=zaak.id,
+                nummer=zaak.nummer,
+                dossier_nummer=zaak.dossier.nummer if zaak.dossier else None,
+                volgnummer=zaak.volgnummer,
+                beschrijving=zaak.onderwerp,
+                indienings_datum=zaak.gestart_op,
+                # FIXME: Get this info another way since API does not give it but OData does have it in their docs
+                termijn=None,
+                is_afgedaan=zaak.afgedaan,
+                kabinetsappreciatie=zaak.kabinetsappreciatie.value if zaak.kabinetsappreciatie else None,
+                zaak_soort=zaak_type,
+            )
+
+            # TODO: Populate besluit and setmming data
+            if zaak.besluiten:
+                for besluit in zaak.besluiten:
+                    breakpoint()
+            # zaak.besluiten
+
+        return list(self._zaken.values())
+
 
 if __name__ == '__main__':
 
     logging.basicConfig(level=logging.INFO)
     scraper = TkScraper(verbose=False)
-    fracties = scraper.get_all_fracties(populate_members=True)
-    for fractie in fracties:
-        print(f'Fractie: {fractie.naam} ({fractie.afkorting})')
-        print(f'Aantal leden: {len(fractie.leden)}')
-        for lid in fractie.leden:
-            print(f'  Lid: {lid.naam} ({lid.uuid})')
+    zaken = scraper.get_all_zaken(
+        ZaakSoortEnum.MOTIE, datetime.datetime(
+            2025, 1, 1,
+        ), datetime.datetime(2025, 12, 31),
+    )
+    print(zaken)
+
+    # fracties = scraper.get_all_fracties(populate_members=True)
+    # for fractie in fracties:
+    #     print(f'Fractie: {fractie.naam} ({fractie.afkorting})')
+    #     print(f'Aantal leden: {len(fractie.leden)}')
+    #     for lid in fractie.leden:
+    #         print(f'  Lid: {lid.naam} ({lid.uuid})')
