@@ -248,10 +248,6 @@ class Zaak(RdfModel):
         g.add((zaak_uri, RDF.type, TK.Zaak))
 
         if self.zaak_soort:
-            # subclass_name = self.zaak_soort.name.replace('_', '')
-            # if hasattr(TK, subclass_name):
-            #     g.add((zaak_uri, RDF.type, getattr(TK, subclass_name)))
-
             # Use the enum's value for the data property literal
             g.add(
                 (
@@ -429,14 +425,9 @@ class Onderwerp(RdfModel):
         onderwerp_uri = self.get_uri()
 
         g.add((onderwerp_uri, RDF.type, TK.Onderwerp))
+
         if self.onderwerp_type:
-            g.add(
-                (
-                    onderwerp_uri,
-                    RDF.type,
-                    getattr(TK, self.onderwerp_type.name),
-                ),
-            )
+            # Add an onderwerp with the type as its value for :onderwerpType
             g.add((
                 onderwerp_uri, TK.onderwerpType, Literal(
                     self.onderwerp_type.value, datatype=XSD.string,
