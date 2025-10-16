@@ -214,7 +214,7 @@ class Fractie(Actor):
             g.add((fractie_uri, TK.heeftLid, lid_uri))
             # Also add the inverse relationship
             g.add((lid_uri, TK.isLidVan, fractie_uri))
-            # TODO: Should we also add the lid itself to the graph?
+            lid.to_rdf(g)
 
 
 @dataclass
