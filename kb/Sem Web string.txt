@@ -1,0 +1,17 @@
+
+
+onderwerpType value "Binnenlandse Zaken en Koninkrijksrelaties"
+onderwerpType value "Buitenlandse Zaken en Defensie"
+onderwerpType value "Economie en Financien"
+onderwerpType value "Infrastructuur en Waterstaat"
+onderwerpType value "Justitie en Veiligheid"
+onderwerpType value "Klimaat en Energie"
+onderwerpType value "Landbouw en Natuur"
+onderwerpType value "Onderwijs Cultuur en Wetenschap"
+onderwerpType value "Sociale Zaken en Werkgelegenheid"
+onderwerpType value "Volksgezondheid en Zorg"
+
+
+
+
+
