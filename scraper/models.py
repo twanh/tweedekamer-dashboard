@@ -248,9 +248,9 @@ class Zaak(RdfModel):
         g.add((zaak_uri, RDF.type, TK.Zaak))
 
         if self.zaak_soort:
-            subclass_name = self.zaak_soort.name.replace('_', '')
-            if hasattr(TK, subclass_name):
-                g.add((zaak_uri, RDF.type, getattr(TK, subclass_name)))
+            # subclass_name = self.zaak_soort.name.replace('_', '')
+            # if hasattr(TK, subclass_name):
+            #     g.add((zaak_uri, RDF.type, getattr(TK, subclass_name)))
 
             # Use the enum's value for the data property literal
             g.add(
