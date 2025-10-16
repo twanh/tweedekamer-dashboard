@@ -65,6 +65,9 @@ class TkScraper:
 
             # Optionally populate members
             if populate_members:
+                self.logger.info(
+                    f'Populating members for fractie {fractie.naam}',
+                )
 
                 # If leden_actief is not provided, fetch it
                 leden_actief = fractie.leden_actief
@@ -77,6 +80,9 @@ class TkScraper:
                         TkFractieZetelPersoon, filter=filter,
                     )
 
+                self.logger.info(
+                    f'Found {len(leden_actief)} active members in fractie {fractie.naam}',
+                )
                 # For each active member, create a PersoonModel
                 # and add it to the fractie_model
                 for lid in leden_actief:
@@ -90,12 +96,24 @@ class TkScraper:
                         is_lid_van=fractie_model,
                     )
 
-                    fractie.leden.append(persoon)
+                    fractie_model.leden.append(persoon)
 
             # Add the fractie_model to self._fracties
             # TODO: Is using uuid the best?
             self._fracties[fractie_model.uuid] = fractie_model
 
-            # ???: Is this return type the best? Or should we
-            # just return the dict
-            return list(self._fracties.values())
+        # ???: Is this return type the best? Or should we
+        # just return the dict
+        return list(self._fracties.values())
+
+
+if __name__ == '__main__':
+
+    logging.basicConfig(level=logging.INFO)
+    scraper = TkScraper(verbose=False)
+    fracties = scraper.get_all_fracties(populate_members=True)
+    for fractie in fracties:
+        print(f'Fractie: {fractie.naam} ({fractie.afkorting})')
+        print(f'Aantal leden: {len(fractie.leden)}')
+        for lid in fractie.leden:
+            print(f'  Lid: {lid.naam} ({lid.uuid})')
