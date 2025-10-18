@@ -126,7 +126,7 @@ class Persoon(Actor):
         if self.geboortedatum:
             g.add((
                 persoon_uri, TK.geboortedatum, Literal(
-                    self.geboortedatum.date(), datatype=XSD.date,
+                    self.geboortedatum, datatype=XSD.date,
                 ),
             ))
         if self.geboorteplaats:
@@ -198,13 +198,13 @@ class Fractie(Actor):
         if self.datum_actief:
             g.add((
                 fractie_uri, TK.datumActief, Literal(
-                    self.datum_actief.date(), datatype=XSD.date,
+                    self.datum_actief, datatype=XSD.date,
                 ),
             ))
         if self.datum_inactief:
             g.add((
                 fractie_uri, TK.datumInactief, Literal(
-                    self.datum_inactief.date(), datatype=XSD.date,
+                    self.datum_inactief, datatype=XSD.date,
                 ),
             ))
 
@@ -293,13 +293,13 @@ class Zaak(RdfModel):
         if self.indienings_datum:
             g.add((
                 zaak_uri, TK.indieningsDatum, Literal(
-                    self.indienings_datum.date(), datatype=XSD.date,
+                    self.indienings_datum, datatype=XSD.date,
                 ),
             ))
         if self.termijn:
             g.add((
                 zaak_uri, TK.termijn, Literal(
-                    self.termijn.date(), datatype=XSD.date,
+                    self.termijn, datatype=XSD.date,
                 ),
             ))
         if self.is_afgedaan is not None:
