@@ -19,6 +19,7 @@ services:
       - "7200:7200"
     volumes:
       - ./kb/data:/opt/graphdb/home/data
+      - ./kb/graphdb-repo-config.ttl:/opt/graphdb/home/data/repositories/tk_repo/config.ttl
 
   scraper:
     build: ./scraper
