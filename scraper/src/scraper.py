@@ -1,5 +1,7 @@
 import datetime
 import logging
+import requests
+import os
 
 from models import Actor as ActorModel
 from models import Fractie as FractieModel
@@ -20,6 +22,7 @@ from tkapi.stemming import Stemming
 from tkapi.util import queries
 from tkapi.zaak import Zaak
 from tkapi.zaak import ZaakSoort
+from rdflib import Graph
 
 
 class TkScraper:
@@ -159,17 +162,48 @@ class TkScraper:
 
         return list(self._zaken.values())
 
+    def upload_to_graphdb(self, g: Graph):
+        """Uploads the RDF graph to GraphDB."""
+        self.logger.info("Uploading data to GraphDB...")
+        data = g.serialize(format='turtle')
+        headers = {'Content-Type': 'application/x-turtle'}
+        url = f"{os.environ.get('GRAPHDB_URL')}/repositories/tk_repo/statements"
+
+        try:
+            response = requests.post(url, data=data, headers=headers)
+            response.raise_for_status()
+            self.logger.info("Data uploaded successfully to GraphDB.")
+        except requests.exceptions.RequestException as e:
+            self.logger.error(f"Error uploading data to GraphDB: {e}")
+
+
+
 
 if __name__ == '__main__':
 
     logging.basicConfig(level=logging.INFO)
     scraper = TkScraper(verbose=False)
-    zaken = scraper.get_all_zaken(
-        ZaakSoortEnum.MOTIE, datetime.datetime(
-            2025, 1, 1,
-        ), datetime.datetime(2025, 12, 31),
-    )
-    print(zaken)
+
+    # Get all fracties with members populated
+    fracties = scraper.get_all_fracties(populate_members=True)
+
+    # Create a graph and add data
+    g = Graph()
+    g.bind("tk", "http://www.semanticweb.org/twanh/ontologies/2025/9/tk/")
+
+    # Add fracties to the graph
+    for fractie in fracties:
+        fractie.to_rdf(g)
+    
+    # Upload the graph to GraphDB
+    scraper.upload_to_graphdb(g)
+
+    # zaken = scraper.get_all_zaken(
+    #     ZaakSoortEnum.MOTIE, datetime.datetime(
+    #         2025, 1, 1,
+    #     ), datetime.datetime(2025, 12, 31),
+    # )
+    # print(zaken)
 
     # fracties = scraper.get_all_fracties(populate_members=True)
     # for fractie in fracties:
