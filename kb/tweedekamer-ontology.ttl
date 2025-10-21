@@ -12,12 +12,43 @@
 #    Object Properties
 #################################################################
 
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/tk#isStem
+:isStem rdf:type owl:ObjectProperty ;
+        rdfs:subPropertyOf owl:topObjectProperty ;
+        owl:inverseOf :heeftGestemdOp ;
+        rdfs:domain :Zaak ;
+        rdfs:range :Actor .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/tk#isStemNietDeelgenomen
+:isStemNietDeelgenomen rdf:type owl:ObjectProperty ;
+                       rdfs:subPropertyOf :isStem ;
+                       owl:inverseOf :heeftNietDeelgenomen ;
+                       rdfs:domain :Zaak ;
+                       rdfs:range :Actor .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/tk#isStemTegen
+:isStemTegen rdf:type owl:ObjectProperty ;
+             rdfs:subPropertyOf :isStem ;
+             owl:inverseOf :heeftTegenGestemd ;
+             rdfs:domain :Zaak ;
+             rdfs:range :Actor .
+
+
+###  http://www.semanticweb.org/twanh/ontologies/2025/9/tk#isStemVoor
+:isStemVoor rdf:type owl:ObjectProperty ;
+            rdfs:subPropertyOf :isStem ;
+            owl:inverseOf :heeftVoorGestemd ;
+            rdfs:domain :Zaak ;
+            rdfs:range :Actor .
+
+
 ###  http://www.semanticweb.org/twanh/ontologies/2025/9/tk/heeftGestemdOp
 :heeftGestemdOp rdf:type owl:ObjectProperty ;
                 rdfs:subPropertyOf owl:topObjectProperty ;
-                owl:inverseOf :isUitgebrachtDoor ;
                 rdfs:domain :Actor ;
-                rdfs:range :Stemming .
+                rdfs:range :Zaak .
 
 
 ###  http://www.semanticweb.org/twanh/ontologies/2025/9/tk/heeftLid
@@ -289,11 +320,6 @@
            rdfs:range xsd:string .
 
 
-###  http://www.w3.org/2002/07/owl#topDataProperty
-owl:topDataProperty rdfs:domain :Persoon ;
-                    rdfs:range xsd:string .
-
-
 #################################################################
 #    Classes
 #################################################################
@@ -475,6 +501,22 @@ owl:topDataProperty rdfs:domain :Persoon ;
                 :OnderwijsCultuurEnWetenschap
                 :SocialeZakenEnWerkgelegenheid
                 :VolksgezondheidEnZorg
+              )
+] .
+
+
+[ rdf:type owl:AllDisjointProperties ;
+  owl:members ( :isStemNietDeelgenomen
+                :isStemTegen
+                :isStemVoor
+              )
+] .
+
+
+[ rdf:type owl:AllDisjointProperties ;
+  owl:members ( :heeftNietDeelgenomen
+                :heeftTegenGestemd
+                :heeftVoorGestemd
               )
 ] .
 
