@@ -1,13 +1,17 @@
-from flask import Flask, render_template
-from SPARQLWrapper import SPARQLWrapper, JSON
+from flask import Flask
+from flask import render_template
+from SPARQLWrapper import JSON
+from SPARQLWrapper import SPARQLWrapper
 
 app = Flask(__name__)
 
+
 def get_db_results(query):
-    sparql = SPARQLWrapper("http://graphdb:7200/repositories/tk_repo")
+    sparql = SPARQLWrapper('http://graphdb:7200/repositories/tk_main')
     sparql.setQuery(query)
     sparql.setReturnFormat(JSON)
     return sparql.query().convert()
+
 
 @app.route('/')
 def index():
