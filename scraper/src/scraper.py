@@ -81,8 +81,8 @@ class TkScraper:
                     )
 
                 self.logger.info(
-                    f'Found {len(leden_actief)}\
-                    active members in fractie {fractie.naam}',
+                    f'Found {len(leden_actief)} '
+                    f'active members in fractie {fractie.naam}',
                 )
                 # For each active member, create a PersoonModel
                 # and add it to the fractie_model
@@ -121,7 +121,7 @@ class TkScraper:
     ) -> list[ZaakModel]:
 
         self.logger.info(
-            f'Fetching all zaken with {zaak_type=},'
+            f'Fetching all zaken with {zaak_type=}, '
             f'{start_date=}, {end_date=}',
         )
 
@@ -141,7 +141,7 @@ class TkScraper:
         self.logger.info(f'Fetched {len(zaken_data)} zaken')
         for zaak in zaken_data:
             self.logger.debug(
-                'Processing zaak:'
+                'Processing zaak: '
                 f'{zaak.nummer} - {zaak.onderwerp} ({zaak.soort})',
             )
 
@@ -181,7 +181,7 @@ class TkScraper:
                         keuze = STEMMING_KEUZE_MAP.get(stem.soort)
                         if not keuze:
                             self.logger.warning(
-                                'Unknown stemming keuze:'
+                                'Unknown stemming keuze: '
                                 f'{stem.soort} for stemming {stem.id}',
                             )
                             continue
@@ -190,7 +190,7 @@ class TkScraper:
                         actor_model = None
                         if stem.persoon_id is not None:
                             self.logger.info(
-                                'Processing stem by persoon'
+                                'Processing stem by persoon '
                                 f'for zaak {zaak_model.nummer}',
                             )
                             # Check if persoon already exists
@@ -218,7 +218,7 @@ class TkScraper:
                                 self._personen[actor_model.uuid] = actor_model
                         elif stem.fractie_id is not None:
                             self.logger.info(
-                                'Processing stem by fractie'
+                                'Processing stem by fractie '
                                 f'for zaak {zaak_model.nummer}',
                             )
                             # Actor is a fractie
@@ -240,7 +240,7 @@ class TkScraper:
                                 self._fracties[actor_model.uuid] = actor_model
                         else:
                             self.logger.warning(
-                                f'Stemming {stem.id}'
+                                f'Stemming {stem.id} '
                                 'has no persoon or fractie associated',
                             )
                             continue
