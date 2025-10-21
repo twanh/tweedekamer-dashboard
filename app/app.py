@@ -27,12 +27,43 @@ def index():
     """
     results = get_db_results(query)
     fracties = []
-    for result in results["results"]["bindings"]:
+    for result in results['results']['bindings']:
         fracties.append({
             'name': result['fractieNaam']['value'],
-            'seats': int(result['aantalZetels']['value'])
+            'seats': int(result['aantalZetels']['value']),
         })
     return render_template('index.html', fracties=fracties)
+
+
+@app.route('/leden')
+def leden():
+    # Example Query: Get all members and their parties
+    query = """
+    PREFIX tk: <http://www.semanticweb.org/twanh/ontologies/2025/9/tk/>
+    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+    SELECT ?persoon ?persoonNaam ?fractieAfko
+    WHERE {
+      ?persoon a tk:Persoon .
+      ?persoon tk:naam ?persoonNaam .
+      OPTIONAL {
+        ?persoon tk:isLidVan ?fractie .
+        ?fractie tk:afkorting ?fractieAfko .
+      }
+    }
+    ORDER BY ?fractieNaam ?persoonNaam
+    """
+
+    results = get_db_results(query)
+    leden = []
+
+    for result in results['results']['bindings']:
+        leden.append({
+            'name': result['persoonNaam']['value'],
+            'party': result.get('fractieAfko', {}).get('value', 'Onbekend'),
+        })
+    return render_template('leden.html', leden=leden)
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True)

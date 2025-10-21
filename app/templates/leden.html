@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tweede Kamer Leden</title>
+</head>
+<body>
+
+    <h1>Overzicht van Tweede Kamer Leden</h1>
+    <ul>
+    {%for lid in leden %}
+        <li>
+            <span style="font-weight: bold;">{{ lid.name }}</span> ({{ lid.party }})
+        </li>
+    {% endfor %}
+    </ul>
+
+</body>
+</html>
