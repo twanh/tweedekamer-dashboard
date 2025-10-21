@@ -89,6 +89,7 @@ class Actor(RdfModel):
 
         actor_uri = self.get_uri()
         g.add((actor_uri, RDF.type, TK.Actor))
+        g.add((actor_uri, TK.uuid, Literal(self.uuid, datatype=XSD.string)))
         if self.naam:
             g.add(
                 (
@@ -247,6 +248,8 @@ class Zaak(RdfModel):
         zaak_uri = self.get_uri()
         g.add((zaak_uri, RDF.type, TK.Zaak))
 
+        g.add((zaak_uri, TK.uuid, Literal(self.uuid, datatype=XSD.string)))
+
         if self.zaak_soort:
             # Use the enum's value for the data property literal
             g.add(
@@ -347,7 +350,7 @@ class Zaak(RdfModel):
 @dataclass
 class Stemming(RdfModel):
 
-    soort: Optional[str] = None  # Maps to :stemmingSoort
+    soort: Optional[str] = None  # Maps to :stemmingSoort, e.g.: Hoofdelijk
     fractie_grootte_op_moment_van_stemming: Optional[int] = None
 
     # Should this be optional?
@@ -369,6 +372,7 @@ class Stemming(RdfModel):
 
         zaak_uri = self.is_stemming_over.get_uri()
 
+        # Add type stemming
         g.add((stemming_uri, RDF.type, TK.Stemming))
         # Add inverse link from Zaak to Stemming
         g.add((zaak_uri, TK.heeftStemming, stemming_uri))
@@ -409,6 +413,9 @@ class Stemming(RdfModel):
             if vote_property:
                 # Link the Actor directly to the Zaak with the vote type
                 g.add((actor_uri, vote_property, zaak_uri))
+
+            # :isUitgebrachtDoor
+            g.add((stemming_uri, TK.isUitgebrachtDoor, actor_uri))
 
             # Ensure the Actor's own data is also added to the graph
             actor.to_rdf(g)

@@ -1,7 +1,8 @@
+import datetime
 import logging
-import os
 
 import requests
+from models import ZaakSoort
 from rdflib import Graph
 
 from scraper import TkScraper
@@ -32,11 +33,25 @@ def main() -> int:
     g.bind('tk', 'http://www.semanticweb.org/twanh/ontologies/2025/9/tk/')
 
     # TODO: Scrape everything
-    scraper.get_all_fracties()
+    fracties = scraper.get_all_fracties(populate_members=True)
 
-    _upload_graph(
-        g, f'{os.environ.get("GRAPHDB_URL")}/repositories/tk_repo/statements',
+    print(fracties)
+
+    # Get zaken
+    logging.info('Fetching all zaken of type MOTIE in 2025...')
+
+    zaken = scraper.get_all_zaken(
+        zaak_type=ZaakSoort.MOTIE,
+        start_date=datetime.datetime(2025, 1, 14),
+        end_date=datetime.datetime(2025, 1, 15),
     )
+
+    print(zaken)
+
+    # _upload_graph(
+    #     g,
+    #     f'{os.environ.get("GRAPHDB_URL")}/repositories/tk_repo/statements',
+    # )
 
     return 0
 
