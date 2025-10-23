@@ -7,8 +7,19 @@
 {% block content %}
 
 <div class="container">
+    <!-- <canvas id="fractieChart" width="400" height="200"></canvas>
 
-    <canvas id="fractieChart" width="400" height="200"></canvas>
+    <hr class="my-4"> -->
+
+    <h2 class="text-center">Fracties</h2>
+    <div class="list-group">
+        {% for f in fracties %}
+            <a href="{{ url_for('fractie_detail', fractie_naam=f.name) }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                {{ f.name }} {% if f.name != f.abbreviation %} ({{ f.abbreviation }}) {% endif %}
+                <span class="badge bg-primary rounded-pill">Aantal zetels: {{ f.seats }}</span>
+            </a>
+        {% endfor %}
+    </div>
 
 </div>
 
@@ -27,7 +38,7 @@
         data: {
             labels: labels,
             datasets: [{
-                label: '# of Seats',
+                label: 'Aantal Zetels',
                 data: data,
                 backgroundColor: 'rgba(54, 162, 235, 0.2)',
                 borderColor: 'rgba(54, 162, 235, 1)',
@@ -37,7 +48,15 @@
         options: {
             scales: {
                 y: {
-                    beginAtZero: true
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 5
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
                 }
             }
         }
