@@ -26,6 +26,20 @@ def create_arg_parser():
         help='The URL of the GraphDB instance.',
     )
 
+    parser.add_argument(
+        '--start-date',
+        type=str,
+        help='The start date for fetching zaken (YYYY-MM-DD).',
+        default='2025-01-01',
+    )
+
+    parser.add_argument(
+        '--end-date',
+        type=str,
+        help='The end date for fetching zaken (YYYY-MM-DD).',
+        default='2025-12-31',
+    )
+
     return parser.parse_args()
 
 
@@ -42,16 +56,20 @@ def _upload_graph(g: Graph, url: str) -> None:
         logging.error(f'Error uploading data to GraphDB: {e}')
 
 
-def _run_scraper() -> tuple[list[Fractie], list[Zaak]]:
+def _run_scraper(
+    start_date: datetime.datetime,
+    end_date: datetime.datetime,
+) -> tuple[list[Fractie], list[Zaak]]:
 
     scraper = TkScraper(verbose=False)
 
     fracties = scraper.get_all_fracties(populate_members=True)
     logging.info('Fetching all zaken of type MOTIE in 2025...')
+
     zaken = scraper.get_all_zaken(
-        zaak_type=ZaakSoort.MOTIE,
-        start_date=datetime.datetime(2025, 1, 14),
-        end_date=datetime.datetime(2025, 1, 15),
+        # zaak_type=ZaakSoort.MOTIE,
+        start_date=start_date,
+        end_date=end_date,
     )
 
     return fracties, zaken
@@ -63,8 +81,11 @@ def main() -> int:
 
     args = create_arg_parser()
 
+    start_date = datetime.datetime.strptime(args.start_date, '%Y-%m-%d')
+    end_date = datetime.datetime.strptime(args.end_date, '%Y-%m-%d')
+
     # Run the scraper
-    fracties, zaken = _run_scraper()
+    fracties, zaken = _run_scraper(start_date, end_date)
 
     # Create the graph
     g = Graph()
@@ -72,13 +93,13 @@ def main() -> int:
 
     for fractie in fracties:
         fractie.to_rdf(g)
+
+    _upload_graph(g, args.graphdb_url)
+
     for zaak in zaken:
         zaak.to_rdf(g)
 
-    _upload_graph(
-        g,
-        args.graphdb_url,
-    )
+    _upload_graph(g, args.graphdb_url)
 
     return 0
 
