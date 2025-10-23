@@ -64,15 +64,27 @@ def _run_scraper(
     scraper = TkScraper(verbose=False)
 
     fracties = scraper.get_all_fracties(populate_members=True)
+    
     logging.info('Fetching all zaken of type MOTIE in 2025...')
 
-    zaken = scraper.get_all_zaken(
-        # zaak_type=ZaakSoort.MOTIE,
-        start_date=start_date,
-        end_date=end_date,
-    )
+    all_zaken = []
+    wanted_zaak_soorten = [
+        ZaakSoort.MOTIE,
+        ZaakSoort.WETSVOORSTEL,
+        ZaakSoort.AMENDEMENT,
+        ZaakSoort.INITIATIEF_WETGEVING,
+    ]
 
-    return fracties, zaken
+    for zaak_type in wanted_zaak_soorten:
+        logging.info(f'Fetching all zaken of type {zaak_type.value} in 2025...')
+        zaken = scraper.get_all_zaken(
+            zaak_type=zaak_type,
+            start_date=start_date,
+            end_date=end_date,
+        )
+        all_zaken.extend(zaken)
+
+    return fracties, all_zaken
 
 
 def main() -> int:
