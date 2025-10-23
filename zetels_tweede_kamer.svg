@@ -1,0 +1,173 @@
+<svg width="900" height="600" viewBox="0 0 900 600" xmlns="http://www.w3.org/2000/svg">
+  <g transform="translate(300,300)">
+    <!-- Radius of semicircle -->
+    <g id="circles0">
+      <!-- Circle at top of semicircle -->
+      <circle id="137" cx="0" cy="-64" r="5" fill="#AAAAAA" transform="rotate(-10)"/>
+      <circle id="131" cx="0" cy="-64" r="5" fill="#AAAAAA" transform="rotate(-20)"/>
+      <circle id="112" cx="0" cy="-64" r="5" fill="#AAAAAA" transform="rotate(-45)"/>
+      <circle id="106" cx="0" cy="-64" r="5" fill="#AAAAAA" transform="rotate(-55)"/>
+      <circle id="87" cx="0" cy="-64" r="5" fill="#AAAAAA" transform="rotate(-75)"/>
+      <circle id="81" cx="0" cy="-64" r="5" fill="#AAAAAA" transform="rotate(-85)"/>
+      <circle id="62" cx="0" cy="-64" r="5" fill="#AAAAAA" transform="rotate(10)"/>
+      <circle id="56" cx="0" cy="-64" r="5" fill="#AAAAAA" transform="rotate(20)"/>
+      <circle id="37" cx="0" cy="-64" r="5" fill="#AAAAAA" transform="rotate(45)"/>
+      <circle id="31" cx="0" cy="-64" r="5" fill="#AAAAAA" transform="rotate(55)"/>
+      <circle id="12" cx="0" cy="-64" r="5" fill="#AAAAAA" transform="rotate(75)"/>
+      <circle id="6" cx="0" cy="-64" r="5" fill="#AAAAAA" transform="rotate(85)"/>
+    </g>
+    <g id="circles1">
+      <!-- Circle at top of semicircle -->
+      <circle id="142" cx="0" cy="-84" r="5" fill="#AAAAAA" transform="rotate(-6)"/>
+      <circle id="136" cx="0" cy="-84" r="5" fill="#AAAAAA" transform="rotate(-14)"/>
+      <circle id="130" cx="0" cy="-84" r="5" fill="#AAAAAA" transform="rotate(-22)"/>
+      <circle id="117" cx="0" cy="-84" r="5" fill="#AAAAAA" transform="rotate(-40)"/>
+      <circle id="111" cx="0" cy="-84" r="5" fill="#AAAAAA" transform="rotate(-48)"/>
+      <circle id="105" cx="0" cy="-84" r="5" fill="#AAAAAA" transform="rotate(-56)"/>
+      <circle id="92" cx="0" cy="-84" r="5" fill="#AAAAAA" transform="rotate(-70)"/>
+      <circle id="86" cx="0" cy="-84" r="5" fill="#AAAAAA" transform="rotate(-78)"/>
+      <circle id="80" cx="0" cy="-84" r="5" fill="#AAAAAA" transform="rotate(-86)"/>
+      <circle id="67" cx="0" cy="-84" r="5" fill="#AAAAAA" transform="rotate(6)"/>
+      <circle id="61" cx="0" cy="-84" r="5" fill="#AAAAAA" transform="rotate(14)"/>
+      <circle id="55" cx="0" cy="-84" r="5" fill="#AAAAAA" transform="rotate(22)"/>
+      <circle id="42" cx="0" cy="-84" r="5" fill="#AAAAAA" transform="rotate(40)"/>
+      <circle id="36" cx="0" cy="-84" r="5" fill="#AAAAAA" transform="rotate(48)"/>
+      <circle id="30" cx="0" cy="-84" r="5" fill="#AAAAAA" transform="rotate(56)"/>
+      <circle id="17" cx="0" cy="-84" r="5" fill="#AAAAAA" transform="rotate(70)"/>
+      <circle id="11" cx="0" cy="-84" r="5" fill="#AAAAAA" transform="rotate(78)"/>
+      <circle id="5" cx="0" cy="-84" r="5" fill="#AAAAAA" transform="rotate(86)"/>
+    </g>
+    <g id="circles2">
+      <!-- Circle at top of semicircle -->
+      <circle id="147" cx="0" cy="-104" r="5" fill="#AAAAAA" transform="rotate(5)"/>
+      <circle id="141" cx="0" cy="-104" r="5" fill="#AAAAAA" transform="rotate(12)"/>
+      <circle id="135" cx="0" cy="-104" r="5" fill="#AAAAAA" transform="rotate(19)"/>
+      <circle id="129" cx="0" cy="-104" r="5" fill="#AAAAAA" transform="rotate(26)"/>
+      <circle id="122" cx="0" cy="-104" r="5" fill="#AAAAAA" transform="rotate(36)"/>
+      <circle id="116" cx="0" cy="-104" r="5" fill="#AAAAAA" transform="rotate(43)"/>
+      <circle id="110" cx="0" cy="-104" r="5" fill="#AAAAAA" transform="rotate(50)"/>
+      <circle id="104" cx="0" cy="-104" r="5" fill="#AAAAAA" transform="rotate(57)"/>
+      <circle id="97" cx="0" cy="-104" r="5" fill="#AAAAAA" transform="rotate(67)"/>
+      <circle id="91" cx="0" cy="-104" r="5" fill="#AAAAAA" transform="rotate(74)"/>
+      <circle id="85" cx="0" cy="-104" r="5" fill="#AAAAAA" transform="rotate(81)"/>
+      <circle id="79" cx="0" cy="-104" r="5" fill="#AAAAAA" transform="rotate(88)"/>
+      <circle id="72" cx="0" cy="-104" r="5" fill="#AAAAAA" transform="rotate(-5)"/>
+      <circle id="66" cx="0" cy="-104" r="5" fill="#AAAAAA" transform="rotate(-12)"/>
+      <circle id="60" cx="0" cy="-104" r="5" fill="#AAAAAA" transform="rotate(-19)"/>
+      <circle id="54" cx="0" cy="-104" r="5" fill="#AAAAAA" transform="rotate(-26)"/>
+      <circle id="47" cx="0" cy="-104" r="5" fill="#AAAAAA" transform="rotate(-36)"/>
+      <circle id="41" cx="0" cy="-104" r="5" fill="#AAAAAA" transform="rotate(-43)"/>
+      <circle id="35" cx="0" cy="-104" r="5" fill="#AAAAAA" transform="rotate(-50)"/>
+      <circle id="29" cx="0" cy="-104" r="5" fill="#AAAAAA" transform="rotate(-57)"/>
+      <circle id="22" cx="0" cy="-104" r="5" fill="#AAAAAA" transform="rotate(-67)"/>
+      <circle id="16" cx="0" cy="-104" r="5" fill="#AAAAAA" transform="rotate(-74)"/>
+      <circle id="10" cx="0" cy="-104" r="5" fill="#AAAAAA" transform="rotate(-81)"/>
+      <circle id="4" cx="0" cy="-104" r="5" fill="#AAAAAA" transform="rotate(-88)"/>
+    </g>
+    <g id="circles3">
+      <!-- Circle at top of semicircle -->
+      <circle id="150" cx="0" cy="-128" r="5" fill="#AAAAAA" transform="rotate(4)"/>
+      <circle id="146" cx="0" cy="-128" r="5" fill="#AAAAAA" transform="rotate(9.5)"/>
+      <circle id="140" cx="0" cy="-128" r="5" fill="#AAAAAA" transform="rotate(15)"/>
+      <circle id="134" cx="0" cy="-128" r="5" fill="#AAAAAA" transform="rotate(20.5)"/>
+      <circle id="128" cx="0" cy="-128" r="5" fill="#AAAAAA" transform="rotate(26)"/>
+      <circle id="125" cx="0" cy="-128" r="5" fill="#AAAAAA" transform="rotate(35)"/>
+      <circle id="121" cx="0" cy="-128" r="5" fill="#AAAAAA" transform="rotate(40.5)"/>
+      <circle id="115" cx="0" cy="-128" r="5" fill="#AAAAAA" transform="rotate(46)"/>
+      <circle id="109" cx="0" cy="-128" r="5" fill="#AAAAAA" transform="rotate(51.5)"/>
+      <circle id="103" cx="0" cy="-128" r="5" fill="#AAAAAA" transform="rotate(57)"/>
+      <circle id="100" cx="0" cy="-128" r="5" fill="#AAAAAA" transform="rotate(65)"/>
+      <circle id="96" cx="0" cy="-128" r="5" fill="#AAAAAA" transform="rotate(70.5)"/>
+      <circle id="90" cx="0" cy="-128" r="5" fill="#AAAAAA" transform="rotate(76)"/>
+      <circle id="84" cx="0" cy="-128" r="5" fill="#AAAAAA" transform="rotate(81.5)"/>
+      <circle id="78" cx="0" cy="-128" r="5" fill="#AAAAAA" transform="rotate(87)"/>
+      <circle id="75" cx="0" cy="-128" r="5" fill="#AAAAAA" transform="rotate(-4)"/>
+      <circle id="71" cx="0" cy="-128" r="5" fill="#AAAAAA" transform="rotate(-9.5)"/>
+      <circle id="65" cx="0" cy="-128" r="5" fill="#AAAAAA" transform="rotate(-15)"/>
+      <circle id="59" cx="0" cy="-128" r="5" fill="#AAAAAA" transform="rotate(-20.5)"/>
+      <circle id="53" cx="0" cy="-128" r="5" fill="#AAAAAA" transform="rotate(-26)"/>
+      <circle id="50" cx="0" cy="-128" r="5" fill="#AAAAAA" transform="rotate(-35)"/>
+      <circle id="46" cx="0" cy="-128" r="5" fill="#AAAAAA" transform="rotate(-40.5)"/>
+      <circle id="40" cx="0" cy="-128" r="5" fill="#AAAAAA" transform="rotate(-46)"/>
+      <circle id="34" cx="0" cy="-128" r="5" fill="#AAAAAA" transform="rotate(-51.5)"/>
+      <circle id="28" cx="0" cy="-128" r="5" fill="#AAAAAA" transform="rotate(-57)"/>
+      <circle id="25" cx="0" cy="-128" r="5" fill="#AAAAAA" transform="rotate(-65)"/>
+      <circle id="21" cx="0" cy="-128" r="5" fill="#AAAAAA" transform="rotate(-70.5)"/>
+      <circle id="15" cx="0" cy="-128" r="5" fill="#AAAAAA" transform="rotate(-76)"/>
+      <circle id="9" cx="0" cy="-128" r="5" fill="#AAAAAA" transform="rotate(-81.5)"/>
+      <circle id="3" cx="0" cy="-128" r="5" fill="#AAAAAA" transform="rotate(-87)"/>
+    </g>
+    <g id="circles4">
+      <!-- Circle at top of semicircle -->
+      <circle id="149" cx="0" cy="-148" r="5" fill="#AAAAAA" transform="rotate(4)"/>
+      <circle id="145" cx="0" cy="-148" r="5" fill="#AAAAAA" transform="rotate(9.5)"/>
+      <circle id="139" cx="0" cy="-148" r="5" fill="#AAAAAA" transform="rotate(15)"/>
+      <circle id="133" cx="0" cy="-148" r="5" fill="#AAAAAA" transform="rotate(20.5)"/>
+      <circle id="127" cx="0" cy="-148" r="5" fill="#AAAAAA" transform="rotate(26)"/>
+      <circle id="124" cx="0" cy="-148" r="5" fill="#AAAAAA" transform="rotate(35)"/>
+      <circle id="120" cx="0" cy="-148" r="5" fill="#AAAAAA" transform="rotate(40.5)"/>
+      <circle id="114" cx="0" cy="-148" r="5" fill="#AAAAAA" transform="rotate(46)"/>
+      <circle id="108" cx="0" cy="-148" r="5" fill="#AAAAAA" transform="rotate(51.5)"/>
+      <circle id="102" cx="0" cy="-148" r="5" fill="#AAAAAA" transform="rotate(57)"/>
+      <circle id="99" cx="0" cy="-148" r="5" fill="#AAAAAA" transform="rotate(65)"/>
+      <circle id="95" cx="0" cy="-148" r="5" fill="#AAAAAA" transform="rotate(70.5)"/>
+      <circle id="89" cx="0" cy="-148" r="5" fill="#AAAAAA" transform="rotate(76)"/>
+      <circle id="83" cx="0" cy="-148" r="5" fill="#AAAAAA" transform="rotate(81.5)"/>
+      <circle id="77" cx="0" cy="-148" r="5" fill="#AAAAAA" transform="rotate(87)"/>
+      <circle id="74" cx="0" cy="-148" r="5" fill="#AAAAAA" transform="rotate(-4)"/>
+      <circle id="70" cx="0" cy="-148" r="5" fill="#AAAAAA" transform="rotate(-9.5)"/>
+      <circle id="64" cx="0" cy="-148" r="5" fill="#AAAAAA" transform="rotate(-15)"/>
+      <circle id="58" cx="0" cy="-148" r="5" fill="#AAAAAA" transform="rotate(-20.5)"/>
+      <circle id="52" cx="0" cy="-148" r="5" fill="#AAAAAA" transform="rotate(-26)"/>
+      <circle id="49" cx="0" cy="-148" r="5" fill="#AAAAAA" transform="rotate(-35)"/>
+      <circle id="45" cx="0" cy="-148" r="5" fill="#AAAAAA" transform="rotate(-40.5)"/>
+      <circle id="39" cx="0" cy="-148" r="5" fill="#AAAAAA" transform="rotate(-46)"/>
+      <circle id="33" cx="0" cy="-148" r="5" fill="#AAAAAA" transform="rotate(-51.5)"/>
+      <circle id="27" cx="0" cy="-148" r="5" fill="#AAAAAA" transform="rotate(-57)"/>
+      <circle id="24" cx="0" cy="-148" r="5" fill="#AAAAAA" transform="rotate(-65)"/>
+      <circle id="20" cx="0" cy="-148" r="5" fill="#AAAAAA" transform="rotate(-70.5)"/>
+      <circle id="14" cx="0" cy="-148" r="5" fill="#AAAAAA" transform="rotate(-76)"/>
+      <circle id="8" cx="0" cy="-148" r="5" fill="#AAAAAA" transform="rotate(-81.5)"/>
+      <circle id="2" cx="0" cy="-148" r="5" fill="#AAAAAA" transform="rotate(-87)"/>
+    </g>
+    <g id="circles4">
+      <!-- Circle at top of semicircle -->
+      <circle id="148" cx="0" cy="-170" r="5" fill="#AAAAAA" transform="rotate(4)"/>
+      <circle id="144" cx="0" cy="-170" r="5" fill="#AAAAAA" transform="rotate(8.5)"/>
+      <circle id="143" cx="0" cy="-170" r="5" fill="#AAAAAA" transform="rotate(13)"/>
+      <circle id="138" cx="0" cy="-170" r="5" fill="#AAAAAA" transform="rotate(17.5)"/>
+      <circle id="132" cx="0" cy="-170" r="5" fill="#AAAAAA" transform="rotate(22)"/>
+      <circle id="126" cx="0" cy="-170" r="5" fill="#AAAAAA" transform="rotate(26.5)"/>
+      <circle id="123" cx="0" cy="-170" r="5" fill="#AAAAAA" transform="rotate(35.5)"/>
+      <circle id="119" cx="0" cy="-170" r="5" fill="#AAAAAA" transform="rotate(40)"/>
+      <circle id="118" cx="0" cy="-170" r="5" fill="#AAAAAA" transform="rotate(44.5)"/>
+      <circle id="113" cx="0" cy="-170" r="5" fill="#AAAAAA" transform="rotate(49)"/>
+      <circle id="107" cx="0" cy="-170" r="5" fill="#AAAAAA" transform="rotate(53.5)"/>
+      <circle id="101" cx="0" cy="-170" r="5" fill="#AAAAAA" transform="rotate(58)"/>
+      <circle id="98" cx="0" cy="-170" r="5" fill="#AAAAAA" transform="rotate(66)"/>
+      <circle id="94" cx="0" cy="-170" r="5" fill="#AAAAAA" transform="rotate(71)"/>
+      <circle id="93" cx="0" cy="-170" r="5" fill="#AAAAAA" transform="rotate(76)"/>
+      <circle id="88" cx="0" cy="-170" r="5" fill="#AAAAAA" transform="rotate(80)"/>
+      <circle id="82" cx="0" cy="-170" r="5" fill="#AAAAAA" transform="rotate(84)"/>
+      <circle id="76" cx="0" cy="-170" r="5" fill="#AAAAAA" transform="rotate(88)"/>
+      <circle id="73" cx="0" cy="-170" r="5" fill="#AAAAAA" transform="rotate(-4)"/>
+      <circle id="69" cx="0" cy="-170" r="5" fill="#AAAAAA" transform="rotate(-8.5)"/>
+      <circle id="68" cx="0" cy="-170" r="5" fill="#AAAAAA" transform="rotate(-13)"/>
+      <circle id="63" cx="0" cy="-170" r="5" fill="#AAAAAA" transform="rotate(-17.5)"/>
+      <circle id="57" cx="0" cy="-170" r="5" fill="#AAAAAA" transform="rotate(-22)"/>
+      <circle id="51" cx="0" cy="-170" r="5" fill="#AAAAAA" transform="rotate(-26.5)"/>
+      <circle id="48" cx="0" cy="-170" r="5" fill="#AAAAAA" transform="rotate(-35.5)"/>
+      <circle id="44" cx="0" cy="-170" r="5" fill="#AAAAAA" transform="rotate(-40)"/>
+      <circle id="43" cx="0" cy="-170" r="5" fill="#AAAAAA" transform="rotate(-44.5)"/>
+      <circle id="38" cx="0" cy="-170" r="5" fill="#AAAAAA" transform="rotate(-49)"/>
+      <circle id="32" cx="0" cy="-170" r="5" fill="#AAAAAA" transform="rotate(-53.5)"/>
+      <circle id="26" cx="0" cy="-170" r="5" fill="#AAAAAA" transform="rotate(-58)"/>
+      <circle id="23" cx="0" cy="-170" r="5" fill="#AAAAAA" transform="rotate(-66)"/>
+      <circle id="19" cx="0" cy="-170" r="5" fill="#AAAAAA" transform="rotate(-71)"/>
+      <circle id="18" cx="0" cy="-170" r="5" fill="#AAAAAA" transform="rotate(-76)"/>
+      <circle id="13" cx="0" cy="-170" r="5" fill="#AAAAAA" transform="rotate(-80)"/>
+      <circle id="7" cx="0" cy="-170" r="5" fill="#AAAAAA" transform="rotate(-84)"/>
+      <circle id="1" cx="0" cy="-170" r="5" fill="#AAAAAA" transform="rotate(-88)"/>
+    </g>
+  </g>
+</svg>
