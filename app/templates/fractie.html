@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %} Leden van {{ fractie_naam }} {% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="text-center mb-4">Leden van {{ fractie_naam }}</h1>
+
+    {% if leden %}
+        <ul class="list-group">
+            {% for lid in leden %}
+                <li class="list-group-item">{{ lid }}</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p class="text-center">Geen leden gevonden voor deze fractie.</p>
+    {% endif %}
+
+    <div class="text-center mt-4">
+        <a href="{{ url_for('index') }}" class="btn btn-primary">Terug naar overzicht</a>
+    </div>
+</div>
+{% endblock %}
