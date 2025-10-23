@@ -7,7 +7,7 @@ app = Flask(__name__)
 
 
 def get_db_results(query):
-    sparql = SPARQLWrapper('http://graphdb:7200/repositories/tk_main')
+    sparql = SPARQLWrapper('http://graphdb:7200/repositories/tk_repo')
     sparql.setQuery(query)
     sparql.setReturnFormat(JSON)
     return sparql.query().convert()
