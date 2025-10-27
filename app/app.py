@@ -108,6 +108,55 @@ def fractie_detail(fractie_naam):
     )
 
 
+@app.route('/zaken')
+def zaken():
+    # Example Query: Get all zaken with their titles and onderwerpen
+    query = """
+    SELECT ?zaak ?titel ?beschrijving ?besluitResultaat ?besluitStemmingsoort ?dossierNummer ?indieningsDatum 
+       ?isAfgedaan ?kabinetsappreciatie ?nummer ?termijn ?uuid ?volgnummer ?zaakSoort ?title
+    WHERE {
+    ?zaak a tk:Zaak .
+    
+    OPTIONAL { ?zaak tk:titel ?titel . }
+    OPTIONAL { ?zaak tk:beschrijving ?beschrijving . }
+    OPTIONAL { ?zaak tk:besluitResultaat ?besluitResultaat . }
+    OPTIONAL { ?zaak tk:besluitStemmingsoort ?besluitStemmingsoort . }
+    OPTIONAL { ?zaak tk:dossierNummer ?dossierNummer . }
+    OPTIONAL { ?zaak tk:indieningsDatum ?indieningsDatum . }
+    OPTIONAL { ?zaak tk:isAfgedaan ?isAfgedaan . }
+    OPTIONAL { ?zaak tk:kabinetsappreciatie ?kabinetsappreciatie . }
+    OPTIONAL { ?zaak tk:nummer ?nummer . }
+    OPTIONAL { ?zaak tk:termijn ?termijn . }
+    OPTIONAL { ?zaak tk:uuid ?uuid . }
+    OPTIONAL { ?zaak tk:volgnummer ?volgnummer . }
+    OPTIONAL { ?zaak tk:zaakSoort ?zaakSoort . }
+    }
+
+    """
+
+    results = get_db_results(query)
+    zaken = []
+
+    for result in results['results']['bindings']:
+        zaken.append({
+            'titel': result.get('titel', {}).get('value', 'Geen titel gevonden.'),
+            'beschrijving': result.get('beschrijving', {}).get('value', 'Geen beschrijving gevonden.'),
+            'besluitResultaat': result.get('besluitResultaat', {}).get('value', 'Geen besluitResultaat gevonden.'),
+            'besluitStemmingsoort': result.get('besluitStemmingsoort', {}).get('value', 'Geen besluitStemmingsoort gevonden.'),
+            'dossierNummer': result.get('dossierNummer', {}).get('value', 'Geen dossierNummer gevonden.'),
+            'indieningsDatum': result.get('indieningsDatum', {}).get('value', 'Geen indieningsDatum gevonden.'),
+            'isAfgedaan': result.get('isAfgedaan', {}).get('value', 'Geen isAfgedaan gevonden.'),
+            'kabinetsappreciatie': result.get('kabinetsappreciatie', {}).get('value', 'Geen kabinetsappreciatie gevonden.'),
+            'nummer': result.get('nummer', {}).get('value', 'Geen nummer gevonden.'),
+            'termijn': result.get('termijn', {}).get('value', 'Geen termijn gevonden.'),
+            'uuid': result.get('uuid', {}).get('value', 'Geen uuid gevonden.'),
+            'volgnummer': result.get('volgnummer', {}).get('value', 'Geen volgnummer gevonden.'),
+            'zaakSoort': result.get('zaakSoort', {}).get('value', 'Geen zaakSoort gevonden.'),
+        })
+
+    return render_template('zaken.html', zaken=zaken)
+
+
 if __name__ == '__main__':
     # Docker Compose setup (uncomment when using Docker)
     app.run(host='0.0.0.0', debug=True)
