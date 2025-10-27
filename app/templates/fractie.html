@@ -7,40 +7,23 @@
     <h1 class="text-center mb-4">Fractie Details: {{ fractie_naam }}</h1>
     
     <div class="row">
-        <div class="col-md-7">
+        <div class="col-md-8">
             <h2 class="text-center">Stemgedrag per Onderwerp</h2>
-            
-            <ul class="nav nav-tabs" id="onderwerpTabs" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="totaal-tab" data-bs-toggle="tab" data-bs-target="#totaal-pane" type="button" role="tab" aria-controls="totaal-pane" aria-selected="true">Totaal</button>
-                </li>
-                {% for onderwerp in onderwerp_votes %}
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="{{ onderwerp|replace(' ', '-') }}-tab" data-bs-toggle="tab" data-bs-target="#{{ onderwerp|replace(' ', '-') }}-pane" type="button" role="tab" aria-controls="{{ onderwerp|replace(' ', '-') }}-pane" aria-selected="false">{{ onderwerp }}</button>
-                </li>
-                {% endfor %}
-            </ul>
-
-            <div class="tab-content" id="onderwerpTabsContent">
-                <div class="tab-pane fade show active" id="totaal-pane" role="tabpanel" aria-labelledby="totaal-tab" tabindex="0">
-                    <canvas id="totalVoteChart" class="mt-3"></canvas>
-                </div>
-                {% for onderwerp, votes in onderwerp_votes.items() %}
-                <div class="tab-pane fade" id="{{ onderwerp|replace(' ', '-') }}-pane" role="tabpanel" aria-labelledby="{{ onderwerp|replace(' ', '-') }}-tab" tabindex="0">
-                    <canvas id="chart-{{ onderwerp|replace(' ', '-') }}" class="mt-3"></canvas>
-                </div>
-                {% endfor %}
-            </div>
+            <canvas id="onderwerpBarChart"></canvas>
         </div>
 
-        <div class="col-md-5">
+        <div class="col-md-4">
             <h2 class="text-center">Leden</h2>
             {% if leden %}
-                <ul class="list-group" style="max-height: 400px; overflow-y: auto;">
+                <ul class="list-group" id="ledenLijst" style="max-height: 500px; overflow-y: auto;">
                     {% for lid in leden %}
                         <li class="list-group-item">{{ lid }}</li>
                     {% endfor %}
                 </ul>
+                <div class="text-center mt-2">
+                    <button id="showMoreBtn" class="btn btn-secondary btn-sm">Toon alle leden</button>
+                    <button id="showLessBtn" class="btn btn-secondary btn-sm" style="display: none;">Toon minder leden</button>
+                </div>
             {% else %}
                 <p class="text-center">Geen leden gevonden voor deze fractie.</p>
             {% endif %}
@@ -56,39 +39,51 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const totalVotes = {{ total_votes | tojson }};
+    // Bar chart
     const onderwerpVotes = {{ onderwerp_votes | tojson }};
+    const labels = Object.keys(onderwerpVotes);
+    const dataVoor = labels.map(onderwerp => onderwerpVotes[onderwerp].voor);
+    const dataTegen = labels.map(onderwerp => onderwerpVotes[onderwerp].tegen);
+    const dataNietDeelgenomen = labels.map(onderwerp => onderwerpVotes[onderwerp].niet_deelgenomen);
+    const ctx = document.getElementById('onderwerpBarChart').getContext('2d');
 
-    const pieChartConfig = (votes) => ({
-        type: 'pie',
+    new Chart(ctx, {
+        type: 'bar',
         data: {
-            labels: ['Voor', 'Tegen', 'Niet Deelgenomen'],
-            datasets: [{
-                data: [votes.voor, votes.tegen, votes.niet_deelgenomen],
-                backgroundColor: ['rgba(75, 192, 192, 0.2)', 'rgba(255, 99, 132, 0.2)', 'rgba(201, 203, 207, 0.2)'],
-                borderColor: ['rgb(75, 192, 192)', 'rgb(255, 99, 132)', 'rgb(201, 203, 207)'],
-                borderWidth: 1
-            }]
+            labels: labels,
+            datasets: [
+                { label: 'Voor', data: dataVoor, backgroundColor: 'rgba(75, 192, 192, 0.5)', borderColor: 'rgb(75, 192, 192)', borderWidth: 1 },
+                { label: 'Tegen', data: dataTegen, backgroundColor: 'rgba(255, 99, 132, 0.5)', borderColor: 'rgb(255, 99, 132)', borderWidth: 1 },
+                { label: 'Niet Deelgenomen', data: dataNietDeelgenomen, backgroundColor: 'rgba(201, 203, 207, 0.5)', borderColor: 'rgb(201, 203, 207)', borderWidth: 1 }
+            ]
         },
         options: {
             responsive: true,
-            plugins: {
-                legend: { position: 'top' },
-                title: { display: false }
-            }
+            scales: { y: { beginAtZero: true, title: { display: true, text: 'Aantal Stemmingen' } } },
+            plugins: { legend: { position: 'top' }, title: { display: true, text: 'Aantal stemmen per onderwerp' } }
         }
     });
 
-    // Total votes chart
-    const totalCtx = document.getElementById('totalVoteChart').getContext('2d');
-    new Chart(totalCtx, pieChartConfig(totalVotes));
+    // Show More Show Less
+    const ledenLijst = document.getElementById('ledenLijst');
+    const showMoreBtn = document.getElementById('showMoreBtn');
+    const showLessBtn = document.getElementById('showLessBtn');
 
-    // Chart for each onderwerp tab
-    for (const onderwerp in onderwerpVotes) {
-        const chartId = `chart-${onderwerp.replace(/ /g, '-')}`;
-        const ctx = document.getElementById(chartId).getContext('2d');
-        new Chart(ctx, pieChartConfig(onderwerpVotes[onderwerp]));
+    if (ledenLijst.scrollHeight <= ledenLijst.clientHeight) {
+        showMoreBtn.style.display = 'none';
     }
+
+    showMoreBtn.addEventListener('click', function() {
+        ledenLijst.style.maxHeight = 'none';
+        showMoreBtn.style.display = 'none';
+        showLessBtn.style.display = 'inline-block';
+    });
+
+    showLessBtn.addEventListener('click', function() {
+        ledenLijst.style.maxHeight = '500px';
+        showLessBtn.style.display = 'none';
+        showMoreBtn.style.display = 'inline-block';
+    });
 });
 </script>
 {% endblock %}
