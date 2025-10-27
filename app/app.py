@@ -1,17 +1,20 @@
-from flask import Flask, render_template
-from SPARQLWrapper import JSON, SPARQLWrapper
 from urllib.parse import unquote
+
+from flask import Flask
+from flask import render_template
+from SPARQLWrapper import JSON
+from SPARQLWrapper import SPARQLWrapper
 
 app = Flask(__name__)
 
 
 def get_db_results(query):
     # Docker Compose setup (uncomment when using Docker)
-    sparql = SPARQLWrapper('http://graphdb:7200/repositories/tk_repo')
+    sparql = SPARQLWrapper('http://graphdb:7200/repositories/tk_kb')
 
     # Localhost for testing without Docker (comment when using Docker)
-    # sparql = SPARQLWrapper('http://localhost:7200/repositories/tk_repo')
-    
+    # sparql = SPARQLWrapper('http://localhost:7200/repositories/tk_kb')
+
     sparql.setQuery(query)
     sparql.setReturnFormat(JSON)
     return sparql.query().convert()
@@ -37,7 +40,7 @@ def index():
         fracties.append({
             'name': result['fractieNaam']['value'],
             'seats': int(result['aantalZetels']['value']),
-            'abbreviation': result['fractieAfko']['value']
+            'abbreviation': result['fractieAfko']['value'],
         })
     return render_template('index.html', fracties=fracties)
 
@@ -71,11 +74,12 @@ def leden():
         })
     return render_template('leden.html', leden=leden)
 
+
 @app.route('/fractie/<path:fractie_naam>')
 def fractie_detail(fractie_naam):
     # Decode the URL-encoded party name
     decoded_fractie_naam = unquote(fractie_naam)
-    
+
     # SPARQL query to get members of a specific party
     query = f"""
     PREFIX tk: <http://www.semanticweb.org/twanh/ontologies/2025/9/tk/>
@@ -88,19 +92,19 @@ def fractie_detail(fractie_naam):
     }}
     ORDER BY ?persoonNaam
     """
-    
+
     results = get_db_results(query)
     leden = [
-        result['persoonNaam']['value'] 
+        result['persoonNaam']['value']
         for result in results['results']['bindings']
     ]
-    
+
     # You can also fetch the party details again if needed
     # For now, we'll just pass the name and the members
     return render_template(
-        'fractie.html', 
+        'fractie.html',
         fractie_naam=decoded_fractie_naam,
-        leden=leden
+        leden=leden,
     )
 
 

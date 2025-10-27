@@ -71,7 +71,7 @@ def main() -> int:
     parser.add_argument(
         'graphdb_url',
         type=str,
-        help="The URL of the GraphDB repository (e.g., 'http://localhost:7200/repositories/tk_repo')",
+        help="The URL of the GraphDB repository (e.g., 'http://localhost:7200/repositories/tk_kb')",
     )
 
     parser.add_argument(
