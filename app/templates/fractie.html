@@ -7,15 +7,36 @@
     <h1 class="text-center mb-4">Fractie Details: {{ fractie_naam }}</h1>
     
     <div class="row">
-        <div class="col-md-6">
-            <h2 class="text-center">Stemgedrag</h2>
-            <canvas id="voteChart" width="400" height="400"></canvas>
+        <div class="col-md-7">
+            <h2 class="text-center">Stemgedrag per Onderwerp</h2>
+            
+            <ul class="nav nav-tabs" id="onderwerpTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="totaal-tab" data-bs-toggle="tab" data-bs-target="#totaal-pane" type="button" role="tab" aria-controls="totaal-pane" aria-selected="true">Totaal</button>
+                </li>
+                {% for onderwerp in onderwerp_votes %}
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="{{ onderwerp|replace(' ', '-') }}-tab" data-bs-toggle="tab" data-bs-target="#{{ onderwerp|replace(' ', '-') }}-pane" type="button" role="tab" aria-controls="{{ onderwerp|replace(' ', '-') }}-pane" aria-selected="false">{{ onderwerp }}</button>
+                </li>
+                {% endfor %}
+            </ul>
+
+            <div class="tab-content" id="onderwerpTabsContent">
+                <div class="tab-pane fade show active" id="totaal-pane" role="tabpanel" aria-labelledby="totaal-tab" tabindex="0">
+                    <canvas id="totalVoteChart" class="mt-3"></canvas>
+                </div>
+                {% for onderwerp, votes in onderwerp_votes.items() %}
+                <div class="tab-pane fade" id="{{ onderwerp|replace(' ', '-') }}-pane" role="tabpanel" aria-labelledby="{{ onderwerp|replace(' ', '-') }}-tab" tabindex="0">
+                    <canvas id="chart-{{ onderwerp|replace(' ', '-') }}" class="mt-3"></canvas>
+                </div>
+                {% endfor %}
+            </div>
         </div>
 
-        <div class="col-md-6">
+        <div class="col-md-5">
             <h2 class="text-center">Leden</h2>
             {% if leden %}
-                <ul class="list-group">
+                <ul class="list-group" style="max-height: 400px; overflow-y: auto;">
                     {% for lid in leden %}
                         <li class="list-group-item">{{ lid }}</li>
                     {% endfor %}
@@ -34,46 +55,40 @@
 
 {% block scripts %}
 <script>
-    // Data for the pie chart, passed from Flask
-    const voteCounts = {{ vote_counts | tojson }};
-    const ctx = document.getElementById('voteChart').getContext('2d');
+document.addEventListener('DOMContentLoaded', function () {
+    const totalVotes = {{ total_votes | tojson }};
+    const onderwerpVotes = {{ onderwerp_votes | tojson }};
 
-    new Chart(ctx, {
+    const pieChartConfig = (votes) => ({
         type: 'pie',
         data: {
             labels: ['Voor', 'Tegen', 'Niet Deelgenomen'],
             datasets: [{
-                label: 'Stemmingen',
-                data: [
-                    voteCounts.voor,
-                    voteCounts.tegen,
-                    voteCounts.niet_deelgenomen
-                ],
-                backgroundColor: [
-                    'rgba(75, 192, 192, 0.2)',  // Green
-                    'rgba(255, 99, 132, 0.2)',   // Red
-                    'rgba(201, 203, 207, 0.2)'  // Grey
-                ],
-                borderColor: [
-                    'rgb(75, 192, 192)',
-                    'rgb(255, 99, 132)',
-                    'rgb(201, 203, 207)'
-                ],
+                data: [votes.voor, votes.tegen, votes.niet_deelgenomen],
+                backgroundColor: ['rgba(75, 192, 192, 0.2)', 'rgba(255, 99, 132, 0.2)', 'rgba(201, 203, 207, 0.2)'],
+                borderColor: ['rgb(75, 192, 192)', 'rgb(255, 99, 132)', 'rgb(201, 203, 207)'],
                 borderWidth: 1
             }]
         },
         options: {
             responsive: true,
             plugins: {
-                legend: {
-                    position: 'top',
-                },
-                title: {
-                    display: true,
-                    text: 'Overzicht van Stemgedrag'
-                }
+                legend: { position: 'top' },
+                title: { display: false }
             }
         }
     });
+
+    // Total votes chart
+    const totalCtx = document.getElementById('totalVoteChart').getContext('2d');
+    new Chart(totalCtx, pieChartConfig(totalVotes));
+
+    // Chart for each onderwerp tab
+    for (const onderwerp in onderwerpVotes) {
+        const chartId = `chart-${onderwerp.replace(/ /g, '-')}`;
+        const ctx = document.getElementById(chartId).getContext('2d');
+        new Chart(ctx, pieChartConfig(onderwerpVotes[onderwerp]));
+    }
+});
 </script>
 {% endblock %}
