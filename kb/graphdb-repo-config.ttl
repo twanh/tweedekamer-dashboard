@@ -1,27 +1,49 @@
-@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
-@prefix rep: <http://www.openrdf.org/config/repository#>.
-@prefix sr: <http://www.openrdf.org/config/repository/sail#>.
-@prefix sail: <http://www.openrdf.org/config/sail#>.
-@prefix owlim: <http://www.ontotext.com/trree/owlim#>.
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix rep: <http://www.openrdf.org/config/repository#> .
+@prefix sr: <http://www.openrdf.org/config/repository/sail#> .
+@prefix sail: <http://www.openrdf.org/config/sail#> .
+@prefix owlim: <http://www.ontotext.com/trree/owlim#> .
+@prefix graphdb: <http://www.ontotext.com/config/graphdb#> .
 
-[] a rep:Repository ;
-    rep:repositoryID "tk_repo" ;
-    rdfs:label "Tweede Kamer Dashboard Repo" ;
-    rep:repositoryImpl [
-        rep:repositoryType "graphdb:SailRepository" ;
-        sr:sailImpl [
-            sail:sailType "graphdb:Sail" ;
-            owlim:ruleset "rdfsplus-optimized" ;
-            owlim:storage-folder "storage" ;
-            owlim:repository-type "file-repository" ;
-            owlim:base-URL "http://www.semanticweb.org/twanh/ontologies/2025/9/tk/" ;
-            owlim:entity-index-size "10000000" ;
-            owlim:disable-sameAs "true" ;
-            owlim:enable-literal-index "true" ;
-            owlim:query-timeout "0" ;
-            owlim:query-limit-results "0" ;
-            owlim:throw-QueryEvaluationException-on-timeout "false" ;
-            owlim:read-only "false"
-        ]
-    ]
-.
+# Define the repository configuration using an explicit subject <#tk_kb>
+<#tk_kb> a rep:Repository ;
+   
+   # Explicitly set the repository ID. This MUST match the directory name in Docker.
+   rep:repositoryID "tk_kb" ;
+   
+   # This label is what you see in the GraphDB Workbench UI.
+   rdfs:label "Tweedekamer KB" ;
+   
+   rep:repositoryImpl [
+       rep:repositoryType "graphdb:SailRepository" ;
+       sr:sailImpl [
+           sail:sailType "graphdb:Sail" ;
+           
+           # --- Core Parameters from your old config ---
+
+           # 1. This is the most important one: your ruleset.
+           owlim:ruleset "owl2-rl-optimized" ;
+           
+           # 2. This is good to keep for performance.
+           owlim:entity-index-size "10000000" ;
+
+           # 3. Set the repository type.
+           owlim:repository-type "file-repository" ;
+
+           # 4. You had sameAs enabled (set to "false" for disable).
+           owlim:disable-sameAs "false" ;
+
+           # 5. You had Full-Text Search disabled.
+           # The extra "fts-indexes" parameters in your old config
+           # were likely conflicting with this and causing the crash.
+           graphdb:enable-fts-index "false" ;
+           
+           # 6. You had literal index enabled.
+           graphdb:enable-literal-index "true" ;
+
+           # ---
+           # Let GraphDB handle all other defaults (like storage-folder).
+           # This is much safer for Docker.
+           # ---
+       ]
+   ].
