@@ -45,6 +45,12 @@ def create_arg_parser():
         default='2025-12-31',
     )
 
+    parser.add_argument(
+        '--disable-topic-classification',
+        action='store_true',
+        help='Disable topic classification for zaken.',
+    )
+
     return parser.parse_args()
 
 
@@ -66,6 +72,7 @@ def _scrape_zaken(
     start_date: datetime.datetime,
     end_date: datetime.datetime,
     zaak_soort: ZaakSoort = ZaakSoort.MOTIE,
+    classify_topics: bool = True,
 ) -> list[Zaak]:
 
     logging.info(
@@ -79,6 +86,7 @@ def _scrape_zaken(
                 zaak_type=zaak_soort,
                 start_date=start_date,
                 end_date=end_date,
+                classify_topics=classify_topics,
             )
             return zaken
 
@@ -157,6 +165,7 @@ def main() -> int:
                 current_date,
                 next_date,
                 zaak_type,
+                classify_topics=not args.disable_topic_classification,
             )
 
             n_zaken += len(zaken)

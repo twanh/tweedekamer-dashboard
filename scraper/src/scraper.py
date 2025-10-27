@@ -122,6 +122,7 @@ class TkScraper:
         zaak_type: ZaakSoortEnum | None = None,
         start_date: datetime.datetime | None = None,
         end_date: datetime.datetime | None = None,
+        classify_topics: bool = True,
     ) -> list[ZaakModel]:
 
         self.logger.info(
@@ -149,15 +150,18 @@ class TkScraper:
                 f'{zaak.nummer} - {zaak.onderwerp} ({zaak.soort})',
             )
 
-            # Classify the zaak onderwerp
-            onderwerp_classification = classify_text(zaak.onderwerp)
-
-            if onderwerp_classification is None:
-                self.logger.warning(
-                    'Could not classify onderwerp for '
-                    f'zaak {zaak.nummer}: {zaak.onderwerp}',
-                )
+            if classify_topics is False:
                 onderwerp_classification = OnderwerpType.Other
+            else:
+                # Classify the zaak onderwerp
+                onderwerp_classification = classify_text(zaak.onderwerp)
+
+                if onderwerp_classification is None:
+                    self.logger.warning(
+                        'Could not classify onderwerp for '
+                        f'zaak {zaak.nummer}: {zaak.onderwerp}',
+                    )
+                    onderwerp_classification = OnderwerpType.Other
 
             # Create new onderwerp
             if self._onderwerpen.get(onderwerp_classification) is None:
