@@ -12,11 +12,15 @@ from requests.exceptions import JSONDecodeError
 
 from scraper import TkScraper
 
+# RETRY CONFIG
 MAX_RETRIES = 3
 RETRY_DELAY = 5  # seconds
 
 
 def create_arg_parser():
+    """
+    Create the argument parser for the script.
+    """
 
     parser = argparse.ArgumentParser(
         description='Scrape data from the TK API and upload it to GraphDB.',
@@ -55,6 +59,8 @@ def create_arg_parser():
 
 
 def _upload_graph(g: Graph, url: str) -> None:
+    """Upload the RDF graph to the GraphDB instance."""
+
     logging.info('Uploading data to GraphDB...')
     data = g.serialize(format='turtle')
     headers = {'Content-Type': 'application/x-turtle'}
@@ -74,6 +80,10 @@ def _scrape_zaken(
     zaak_soort: ZaakSoort = ZaakSoort.MOTIE,
     classify_topics: bool = True,
 ) -> list[Zaak]:
+    """
+    Scrape zaken of a specific type within a date range,
+    with retries on failure.
+    """
 
     logging.info(
         f'Scraping zaken ({zaak_soort}) from {start_date} to {end_date}',
@@ -81,7 +91,9 @@ def _scrape_zaken(
 
     for attempt in range(MAX_RETRIES):
         try:
+
             logging.info(f'Fetching zaken (Attempt {attempt + 1})...')
+
             zaken = scraper.get_all_zaken(
                 zaak_type=zaak_soort,
                 start_date=start_date,
@@ -119,8 +131,9 @@ def main() -> int:
     g.bind('tk', 'http://www.semanticweb.org/twanh/ontologies/2025/9/tk/')
 
     # Run the scraper
-    fracties = []
 
+    # First scrape all the fracties
+    fracties = []
     for attempt in range(MAX_RETRIES):
         try:
             logging.info(f'Fetching all fracties (Attempt {attempt + 1})...')
