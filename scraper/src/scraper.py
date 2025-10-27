@@ -1,7 +1,10 @@
 import datetime
 import logging
 
+from classifier import classify_text
 from models import Fractie as FractieModel
+from models import Onderwerp
+from models import OnderwerpType
 from models import Persoon as PersoonModel
 from models import Stemming as StemmingModel
 from models import StemmingKeuze
@@ -31,6 +34,7 @@ class TkScraper:
         self._zaken: dict[str, ZaakModel] = {}
         self._fracties: dict[str, FractieModel] = {}
         self._personen: dict[str, PersoonModel] = {}
+        self._onderwerpen: dict[OnderwerpType, Onderwerp] = {}
 
     def get_all_fracties(
         self,
@@ -145,6 +149,27 @@ class TkScraper:
                 f'{zaak.nummer} - {zaak.onderwerp} ({zaak.soort})',
             )
 
+            # Classify the zaak onderwerp
+            onderwerp_classification = classify_text(zaak.onderwerp)
+
+            if onderwerp_classification is None:
+                self.logger.warning(
+                    'Could not classify onderwerp for '
+                    f'zaak {zaak.nummer}: {zaak.onderwerp}',
+                )
+                onderwerp_classification = OnderwerpType.Other
+
+            # Create new onderwerp
+            if self._onderwerpen.get(onderwerp_classification) is None:
+                self.logger.info(
+                    'Creating new Onderwerp for '
+                    f'{onderwerp_classification}',
+                )
+                self._onderwerpen[onderwerp_classification] = Onderwerp(
+                    onderwerp_type=onderwerp_classification,
+                )
+
+            # Create ZaakModel
             zaak_model = ZaakModel(
                 uuid=zaak.id,
                 nummer=zaak.nummer,
@@ -159,6 +184,12 @@ class TkScraper:
                 # FIXME: Throws error
                 # kabinetsappreciatie=
                 zaak_soort=zaak_type,
+                onderwerp=self._onderwerpen[onderwerp_classification],
+            )
+
+            # Add zaak_model to the correct Onderwerp
+            self._onderwerpen[onderwerp_classification].zaken.append(
+                zaak_model,
             )
 
             # TODO: Populate besluit and setmming data

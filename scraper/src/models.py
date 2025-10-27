@@ -37,6 +37,7 @@ class OnderwerpType(enum.Enum):
     OnderwijsCultuurEnWetenschap = 'Onderwijs Cultuur en Wetenschap'
     SocialeZakenEnWerkgelegenheid = 'Sociale Zaken en Werkgelegenheid'
     VolksgezondheidEnZorg = 'Volksgezondheid en Zorg'
+    Other = 'Other'
 
     def __str__(self):
         return self.value
