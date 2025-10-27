@@ -10,7 +10,7 @@ app = Flask(__name__)
 
 def get_db_results(query):
     # Docker Compose setup (uncomment when using Docker)
-    sparql = SPARQLWrapper('http://graphdb:7200/repositories/tk_tkb')
+    sparql = SPARQLWrapper('http://graphdb:7200/repositories/tk_kb')
 
     # Localhost for testing without Docker (comment when using Docker)
     # sparql = SPARQLWrapper('http://localhost:7200/repositories/tk_kb')
