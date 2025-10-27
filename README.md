@@ -74,14 +74,9 @@ docker-compose exec scraper python scraper/src/main.py \
   --end-date 2025-12-31
 ```
 
-#### Option B: Disable Topic Classification
+#### Option B: Upload Existing Data
 
-If you want to skip topic classification to speed up the scraping process:
-
-```bash
-docker-compose exec scraper python scraper/src/main.py \
-  --disable-topic-classification
-```
+Upload a exesting data file to the repository. The datafile will be made public in a later stage.
 
 ## Accessing the Web App
 
