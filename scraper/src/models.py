@@ -84,11 +84,7 @@ class Actor(RdfModel):
     """:Actor"""
 
     naam: Optional[str] = None
-    # TODO: This is defined in the ontology,
-    # but what does it reference to in the API?
     nummer: Optional[str] = None
-
-    # TODO: Add heeftGestemdOp?
 
     def to_rdf(self, g: Graph, visited: Optional[set] = None) -> None:
         if visited is None:

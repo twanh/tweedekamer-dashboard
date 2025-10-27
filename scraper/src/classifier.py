@@ -8,22 +8,7 @@ dotenv.load_dotenv()
 
 api_key = os.getenv('OPENAI_API_KEY')
 
-
 client = openai.OpenAI(api_key=api_key)
-
-# Mapping of the topics
-# CATEGORY_MAP = {
-#     1: "BinnenlandseZakenKoninkrijksrelaties",
-#     2: "BuitenlandseZakenEnDefensie",
-#     3: "EconomieEnFinancien",
-#     4: "InfrastructuurEnWaterstaat",
-#     5: "JustitieEnVeiligheid",
-#     6: "KlimaatEnEnergie",
-#     7: "LandbouwEnNatuur",
-#     8: "OnderwijsCultuurEnWetenschap",
-#     9: "SocialeZakenEnWerkgelegenheid",
-#     10: "VolksgezondheidEnZorg"
-# }
 
 CATEGORY_MAP = {
     1: OnderwerpType.BinnenlandseZakenKoninkrijksrelaties,
