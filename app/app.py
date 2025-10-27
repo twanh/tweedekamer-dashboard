@@ -159,16 +159,12 @@ def leden():
         })
     return render_template('leden.html', leden=leden)
 
-
-# app/app.py
-
 @app.route('/fractie/<path:fractie_naam>')
 def fractie_detail(fractie_naam):
     # Decode the URL-encoded party name
     decoded_fractie_naam = unquote(fractie_naam)
 
-    # SPARQL query to get members and voting statistics for a specific party
-    # Groups vote counts by topic (Onderwerp)
+    # This corrected query uses only the BIND method to define the count variables
     query = f"""
     PREFIX tk: <http://www.semanticweb.org/twanh/ontologies/2025/9/tk/>
 
@@ -178,20 +174,18 @@ def fractie_detail(fractie_naam):
       ?fractie a tk:Fractie ;
                tk:naam "{decoded_fractie_naam}" .
 
-      # Get all members of this fractie
-      ?fractie tk:heeftLid ?persoon .
-      ?persoon tk:naam ?persoonNaam .
-
-      # OPTIONAL blocks to count votes in each category
-      OPTIONAL {{ ?fractie tk:heeftVoorGestemd ?zaakVoor . }}
-      OPTIONAL {{ ?fractie tk:heeftTegenGestemd ?zaakTegen . }}
-      OPTIONAL {{ ?fractie tk:heeftNietDeelgenomen ?zaakNietDeelgenomen . }}
+      # Use a VALUES block to define the vote types we are interested in
       VALUES ?voteProperty {{ tk:heeftVoorGestemd tk:heeftTegenGestemd tk:heeftNietDeelgenomen }}
-
+      
+      # Find all zaken the fractie has voted on
       ?fractie ?voteProperty ?zaak .
+      
+      # Get the onderwerp for each zaak
       ?zaak tk:heeftOnderwerp ?onderwerp .
       ?onderwerp tk:onderwerpType ?onderwerpType .
 
+      # Use BIND to conditionally link zaken to vote types for counting.
+      # This is the single, correct place to define these variables.
       BIND(IF(?voteProperty = tk:heeftVoorGestemd, ?zaak, 1/0) AS ?zaakVoor)
       BIND(IF(?voteProperty = tk:heeftTegenGestemd, ?zaak, 1/0) AS ?zaakTegen)
       BIND(IF(?voteProperty = tk:heeftNietDeelgenomen, ?zaak, 1/0) AS ?zaakNietDeelgenomen)
@@ -201,30 +195,7 @@ def fractie_detail(fractie_naam):
     """
 
     results = get_db_results(query)
-
-    leden = []
-    # Initialize vote_counts; we only need one set of counts for the whole party
-    vote_counts = {
-        'voor': 0,
-        'tegen': 0,
-        'niet_deelgenomen': 0,
-    }
-
-    bindings = results['results']['bindings']
-    if bindings:
-        # Since the vote counts are the same for every member of the party,
-        # we can just take the counts from the first result.
-        first_result = bindings[0]
-        vote_counts['voor'] = int(first_result['stemmenVoor']['value'])
-        vote_counts['tegen'] = int(first_result['stemmenTegen']['value'])
-        vote_counts['niet_deelgenomen'] = int(
-            first_result['stemmenNietDeelgenomen']['value'],
-        )
-
-        # Get the list of all members
-        for result in bindings:
-            leden.append(result['persoonNaam']['value'])
-
+    
     onderwerp_votes = {}
     total_votes = {'voor': 0, 'tegen': 0, 'niet_deelgenomen': 0}
 
@@ -233,19 +204,17 @@ def fractie_detail(fractie_naam):
         voor = int(result['stemmenVoor']['value'])
         tegen = int(result['stemmenTegen']['value'])
         niet_deelgenomen = int(result['stemmenNietDeelgenomen']['value'])
-        # Store votes per onderwerp
+        
         onderwerp_votes[onderwerp] = {
             'voor': voor,
             'tegen': tegen,
-            'niet_deelgenomen': niet_deelgenomen,
+            'niet_deelgenomen': niet_deelgenomen
         }
 
-        # Aggregate total votes
         total_votes['voor'] += voor
         total_votes['tegen'] += tegen
         total_votes['niet_deelgenomen'] += niet_deelgenomen
 
-    # Get all the members
     leden_query = f"""
     PREFIX tk: <http://www.semanticweb.org/twanh/ontologies/2025/9/tk/>
     SELECT ?persoonNaam WHERE {{
@@ -255,18 +224,14 @@ def fractie_detail(fractie_naam):
     }} ORDER BY ?persoonNaam
     """
     leden_results = get_db_results(leden_query)
-    leden = [
-        res['persoonNaam']['value']
-        for res in leden_results['results']['bindings']
-    ]
+    leden = [res['persoonNaam']['value'] for res in leden_results['results']['bindings']]
 
     return render_template(
-        'fractie.html',
-        fractie_naam=decoded_fractie_naam,
+        'fractie.html', 
+        fractie_naam=decoded_fractie_naam, 
         leden=leden,
-        vote_counts=vote_counts,  # Pass the vote counts to the template
         total_votes=total_votes,
-        onderwerp_votes=onderwerp_votes,
+        onderwerp_votes=onderwerp_votes
     )
 
 
