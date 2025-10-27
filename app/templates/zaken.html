@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+
+    <h1 class="text-center">Overzicht van Tweede Kamer Zaken</h1>
+    <div class="container">
+        <ul class="list-group">
+        {% for zaak in zaken %}
+            <li class="list-group-item d-flex justify-content-between">
+                <span><strong>Titel:</strong> {{ zaak.title }}</span>
+                <span><strong>Beschrijving:</strong> {{ zaak.beschrijving }}</span>
+                <span><strong>UUID:</strong> {{ zaak.uuid }}</span>
+                <span><strong>ZaakSoort:</strong> {{ zaak.zaakSoort }}</span>
+            </li>
+        {% endfor %}
+        </ul>
+    </div>
+
+
+{% endblock %}
