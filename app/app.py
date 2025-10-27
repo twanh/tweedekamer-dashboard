@@ -22,27 +22,7 @@ def get_db_results(query):
 
 @app.route('/')
 def index():
-    # Get all parties and their number of seats
-    query = """
-    PREFIX tk: <http://www.semanticweb.org/twanh/ontologies/2025/9/tk/>
-    SELECT ?fractieNaam ?aantalZetels ?fractieAfko
-    WHERE {
-        ?fractie a tk:Fractie ;
-                 tk:naam ?fractieNaam ;
-                 tk:aantalZetels ?aantalZetels ;
-                 tk:afkorting ?fractieAfko .
-    }
-    ORDER BY DESC(?aantalZetels)
-    """
-    results = get_db_results(query)
-    fracties = []
-    for result in results['results']['bindings']:
-        fracties.append({
-            'name': result['fractieNaam']['value'],
-            'seats': int(result['aantalZetels']['value']),
-            'abbreviation': result['fractieAfko']['value'],
-        })
-    return render_template('index.html', fracties=fracties)
+    return render_template('index.html')
 
 
 @app.route('/agreement')
@@ -130,34 +110,29 @@ def agreement():
     return render_template('agreement.html', parties=parties, agreement_matrix=agreement_matrix)
 
 
-@app.route('/leden')
-def leden():
-    # Get all members and their parties
+@app.route('/fracties')
+def fracties():
+    # Get all parties and their number of seats
     query = """
     PREFIX tk: <http://www.semanticweb.org/twanh/ontologies/2025/9/tk/>
-    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-
-    SELECT ?persoon ?persoonNaam ?fractieAfko
+    SELECT ?fractieNaam ?aantalZetels ?fractieAfko
     WHERE {
-      ?persoon a tk:Persoon .
-      ?persoon tk:naam ?persoonNaam .
-      OPTIONAL {
-        ?persoon tk:isLidVan ?fractie .
-        ?fractie tk:afkorting ?fractieAfko .
-      }
+        ?fractie a tk:Fractie ;
+                 tk:naam ?fractieNaam ;
+                 tk:aantalZetels ?aantalZetels ;
+                 tk:afkorting ?fractieAfko .
     }
-    ORDER BY ?fractieNaam ?persoonNaam
+    ORDER BY DESC(?aantalZetels)
     """
-
     results = get_db_results(query)
-    leden = []
-
+    fracties = []
     for result in results['results']['bindings']:
-        leden.append({
-            'name': result['persoonNaam']['value'],
-            'party': result.get('fractieAfko', {}).get('value', 'Onbekend'),
+        fracties.append({
+            'name': result['fractieNaam']['value'],
+            'seats': int(result['aantalZetels']['value']),
+            'abbreviation': result['fractieAfko']['value'],
         })
-    return render_template('leden.html', leden=leden)
+    return render_template('fracties.html', fracties=fracties)
 
 @app.route('/fractie/<path:fractie_naam>')
 def fractie_detail(fractie_naam):
