@@ -65,12 +65,16 @@ class RdfModel:
         # pass class_name as parameter to get_uri
         return TK[f'{self.__class__.__name__.lower()}/{self.uuid}']
 
-    def to_rdf(self, g: Graph) -> None:
+    def to_rdf(self, g: Graph, visited: Optional[set] = None) -> None:
         """
         Convert the instance to RDF and add it to the provided graph.
 
         Note that `g` is passed by reference, so modifications to `g` will
         be reflected outside this method.
+
+        Args:
+            g: The RDF graph to add triples to
+            visited: Set of already processed URIs to avoid infinite recursion
         """
         raise NotImplementedError('Should be implemented by subclass')
 
@@ -86,9 +90,12 @@ class Actor(RdfModel):
 
     # TODO: Add heeftGestemdOp?
 
-    def to_rdf(self, g: Graph) -> None:
+    def to_rdf(self, g: Graph, visited: Optional[set] = None) -> None:
+        if visited is None:
+            visited = set()
 
         actor_uri = self.get_uri()
+
         g.add((actor_uri, RDF.type, TK.Actor))
         g.add((actor_uri, TK.uuid, Literal(self.uuid, datatype=XSD.string)))
         if self.naam:
@@ -119,11 +126,21 @@ class Persoon(Actor):
 
     is_lid_van: Optional['Fractie'] = None  # :isLidVan (Range is Fractie)
 
-    def to_rdf(self, g: Graph) -> None:
+    def to_rdf(self, g: Graph, visited: Optional[set] = None) -> None:
+        if visited is None:
+            visited = set()
+
         persoon_uri = self.get_uri()
+
+        # Prevent infinite recursion
+        if persoon_uri in visited:
+            return
+
+        visited.add(persoon_uri)
+
         g.add((persoon_uri, RDF.type, TK.Persoon))
         # Add properties from Actor
-        super().to_rdf(g)
+        super().to_rdf(g, visited)
 
         if self.geboortedatum:
             g.add((
@@ -160,6 +177,7 @@ class Persoon(Actor):
             g.add((persoon_uri, TK.isLidVan, fractie_uri))
             # Also add the inverse relationship
             g.add((fractie_uri, TK.heeftLid, persoon_uri))
+            self.is_lid_van.to_rdf(g, visited)
 
 
 @dataclass
@@ -177,12 +195,22 @@ class Fractie(Actor):
     # the proper relation.
     leden: list['Persoon'] = field(default_factory=list)
 
-    def to_rdf(self, g: Graph) -> None:
+    def to_rdf(self, g: Graph, visited: Optional[set] = None) -> None:
+        if visited is None:
+            visited = set()
+
         fractie_uri = self.get_uri()
+
+        # Prevent infinite recursion
+        if fractie_uri in visited:
+            return
+
+        visited.add(fractie_uri)
+
         g.add((fractie_uri, RDF.type, TK.Fractie))
 
         # Add properties from Actor
-        super().to_rdf(g)
+        super().to_rdf(g, visited)
 
         if self.afkorting:
             g.add((
@@ -216,7 +244,7 @@ class Fractie(Actor):
             g.add((fractie_uri, TK.heeftLid, lid_uri))
             # Also add the inverse relationship
             g.add((lid_uri, TK.isLidVan, fractie_uri))
-            lid.to_rdf(g)
+            lid.to_rdf(g, visited)
 
 
 @dataclass
@@ -244,9 +272,18 @@ class Zaak(RdfModel):
     onderwerp: Optional['Onderwerp'] = None
     stemmingen: list['Stemming'] = field(default_factory=list)
 
-    def to_rdf(self, g: Graph):
+    def to_rdf(self, g: Graph, visited: Optional[set] = None):
+        if visited is None:
+            visited = set()
 
         zaak_uri = self.get_uri()
+
+        # Prevent infinite recursion
+        if zaak_uri in visited:
+            return
+
+        visited.add(zaak_uri)
+
         g.add((zaak_uri, RDF.type, TK.Zaak))
 
         g.add((zaak_uri, TK.uuid, Literal(self.uuid, datatype=XSD.string)))
@@ -337,7 +374,7 @@ class Zaak(RdfModel):
             # Also add the inverse relationship
             g.add((onderwerp_uri, TK.heeftZaak, zaak_uri))
             # Add the Onderwerp itself to the graph
-            self.onderwerp.to_rdf(g)
+            self.onderwerp.to_rdf(g, visited)
 
         for stemming in self.stemmingen:
             stemming_uri = stemming.get_uri()
@@ -345,7 +382,7 @@ class Zaak(RdfModel):
             # Also add the inverse relationship
             g.add((stemming_uri, TK.isStemmingOver, zaak_uri))
             # Add the Stemming itself to the graph
-            stemming.to_rdf(g)
+            stemming.to_rdf(g, visited)
 
 
 @dataclass
@@ -362,10 +399,18 @@ class Stemming(RdfModel):
         tuple['Actor', 'StemmingKeuze']
     ] = field(default_factory=list)
 
-    def to_rdf(self, g: Graph):
+    def to_rdf(self, g: Graph, visited: Optional[set] = None):
         """Adds RDF triples for this stemming instance to the graph."""
+        if visited is None:
+            visited = set()
 
         stemming_uri = self.get_uri()
+
+        # Prevent infinite recursion
+        if stemming_uri in visited:
+            return
+
+        visited.add(stemming_uri)
         if not self.is_stemming_over:
             raise ValueError(
                 'Stemming must be associated with a Zaak via is_stemming_over.',  # noqa: E501
@@ -419,7 +464,7 @@ class Stemming(RdfModel):
             g.add((stemming_uri, TK.isUitgebrachtDoor, actor_uri))
 
             # Ensure the Actor's own data is also added to the graph
-            actor.to_rdf(g)
+            actor.to_rdf(g, visited)
 
 
 @dataclass
@@ -429,8 +474,17 @@ class Onderwerp(RdfModel):
     onderwerp_type: Optional[OnderwerpType] = None
     zaken: list['Zaak'] = field(default_factory=list)
 
-    def to_rdf(self, g: Graph):
+    def to_rdf(self, g: Graph, visited: Optional[set] = None):
+        if visited is None:
+            visited = set()
+
         onderwerp_uri = self.get_uri()
+
+        # Prevent infinite recursion
+        if onderwerp_uri in visited:
+            return
+
+        visited.add(onderwerp_uri)
 
         g.add((onderwerp_uri, RDF.type, TK.Onderwerp))
 
@@ -448,4 +502,4 @@ class Onderwerp(RdfModel):
             # Also add the inverse property from Zaak to Onderwerp
             g.add((zaak_uri, TK.heeftOnderwerp, onderwerp_uri))
             # Ensure the linked zaak's data is also added to the graph
-            zaak.to_rdf(g)
+            zaak.to_rdf(g, visited)
