@@ -10,7 +10,7 @@ app = Flask(__name__)
 
 def get_db_results(query):
     # Docker Compose setup (uncomment when using Docker)
-    sparql = SPARQLWrapper('http://graphdb:7200/repositories/tk_kb')
+    sparql = SPARQLWrapper('http://graphdb:7200/repositories/tk_tkb')
 
     # Localhost for testing without Docker (comment when using Docker)
     # sparql = SPARQLWrapper('http://localhost:7200/repositories/tk_kb')
@@ -22,7 +22,7 @@ def get_db_results(query):
 
 @app.route('/')
 def index():
-    # Example Query: Get all parties and their number of seats
+    # Get all parties and their number of seats
     query = """
     PREFIX tk: <http://www.semanticweb.org/twanh/ontologies/2025/9/tk/>
     SELECT ?fractieNaam ?aantalZetels ?fractieAfko
@@ -47,7 +47,7 @@ def index():
 
 @app.route('/leden')
 def leden():
-    # Example Query: Get all members and their parties
+    # Get all members and their parties
     query = """
     PREFIX tk: <http://www.semanticweb.org/twanh/ontologies/2025/9/tk/>
     PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -75,62 +75,78 @@ def leden():
     return render_template('leden.html', leden=leden)
 
 
+# app/app.py
+
 @app.route('/fractie/<path:fractie_naam>')
 def fractie_detail(fractie_naam):
     # Decode the URL-encoded party name
     decoded_fractie_naam = unquote(fractie_naam)
-    
-    # SPARQL query to get members and voting statistics for a specific party
+
+    # Groups vote counts by topic (Onderwerp)
     query = f"""
     PREFIX tk: <http://www.semanticweb.org/twanh/ontologies/2025/9/tk/>
 
-    SELECT ?persoonNaam (COUNT(DISTINCT ?zaakVoor) AS ?stemmenVoor) (COUNT(DISTINCT ?zaakTegen) AS ?stemmenTegen) (COUNT(DISTINCT ?zaakNietDeelgenomen) AS ?stemmenNietDeelgenomen)
+    SELECT ?onderwerpType (COUNT(DISTINCT ?zaakVoor) AS ?stemmenVoor) (COUNT(DISTINCT ?zaakTegen) AS ?stemmenTegen) (COUNT(DISTINCT ?zaakNietDeelgenomen) AS ?stemmenNietDeelgenomen)
     WHERE {{
       # Find the fractie by name
       ?fractie a tk:Fractie ;
                tk:naam "{decoded_fractie_naam}" .
-      
-      # Get all members of this fractie
-      ?fractie tk:heeftLid ?persoon .
-      ?persoon tk:naam ?persoonNaam .
-      
-      # OPTIONAL blocks to count votes in each category
-      OPTIONAL {{ ?fractie tk:heeftVoorGestemd ?zaakVoor . }}
-      OPTIONAL {{ ?fractie tk:heeftTegenGestemd ?zaakTegen . }}
-      OPTIONAL {{ ?fractie tk:heeftNietDeelgenomen ?zaakNietDeelgenomen . }}
+
+      VALUES ?voteProperty {{ tk:heeftVoorGestemd tk:heeftTegenGestemd tk:heeftNietDeelgenomen }}
+
+      ?fractie ?voteProperty ?zaak .
+      ?zaak tk:heeftOnderwerp ?onderwerp .
+      ?onderwerp tk:onderwerpType ?onderwerpType .
+
+      BIND(IF(?voteProperty = tk:heeftVoorGestemd, ?zaak, 1/0) AS ?zaakVoor)
+      BIND(IF(?voteProperty = tk:heeftTegenGestemd, ?zaak, 1/0) AS ?zaakTegen)
+      BIND(IF(?voteProperty = tk:heeftNietDeelgenomen, ?zaak, 1/0) AS ?zaakNietDeelgenomen)
     }}
-    GROUP BY ?persoonNaam
-    ORDER BY ?persoonNaam
+    GROUP BY ?onderwerpType
+    ORDER BY ?onderwerpType
     """
-    
+
     results = get_db_results(query)
     
-    leden = []
-    # Initialize vote_counts; we only need one set of counts for the whole party
-    vote_counts = {
-        'voor': 0,
-        'tegen': 0,
-        'niet_deelgenomen': 0
-    }
+    onderwerp_votes = {}
+    total_votes = {'voor': 0, 'tegen': 0, 'niet_deelgenomen': 0}
 
-    bindings = results['results']['bindings']
-    if bindings:
-        # Since the vote counts are the same for every member of the party,
-        # we can just take the counts from the first result.
-        first_result = bindings[0]
-        vote_counts['voor'] = int(first_result['stemmenVoor']['value'])
-        vote_counts['tegen'] = int(first_result['stemmenTegen']['value'])
-        vote_counts['niet_deelgenomen'] = int(first_result['stemmenNietDeelgenomen']['value'])
+    for result in results['results']['bindings']:
+        onderwerp = result['onderwerpType']['value']
+        voor = int(result['stemmenVoor']['value'])
+        tegen = int(result['stemmenTegen']['value'])
+        niet_deelgenomen = int(result['stemmenNietDeelgenomen']['value'])
         
-        # Get the list of all members
-        for result in bindings:
-            leden.append(result['persoonNaam']['value'])
+        # Store votes per onderwerp
+        onderwerp_votes[onderwerp] = {
+            'voor': voor,
+            'tegen': tegen,
+            'niet_deelgenomen': niet_deelgenomen
+        }
+
+        # Aggregate total votes
+        total_votes['voor'] += voor
+        total_votes['tegen'] += tegen
+        total_votes['niet_deelgenomen'] += niet_deelgenomen
+
+    # Get all the members
+    leden_query = f"""
+    PREFIX tk: <http://www.semanticweb.org/twanh/ontologies/2025/9/tk/>
+    SELECT ?persoonNaam WHERE {{
+      ?fractie tk:naam "{decoded_fractie_naam}" ;
+               tk:heeftLid ?persoon .
+      ?persoon tk:naam ?persoonNaam .
+    }} ORDER BY ?persoonNaam
+    """
+    leden_results = get_db_results(leden_query)
+    leden = [res['persoonNaam']['value'] for res in leden_results['results']['bindings']]
 
     return render_template(
         'fractie.html', 
         fractie_naam=decoded_fractie_naam, 
         leden=leden,
-        vote_counts=vote_counts  # Pass the vote counts to the template
+        total_votes=total_votes,
+        onderwerp_votes=onderwerp_votes
     )
 
 
