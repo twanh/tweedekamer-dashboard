@@ -79,32 +79,58 @@ def leden():
 def fractie_detail(fractie_naam):
     # Decode the URL-encoded party name
     decoded_fractie_naam = unquote(fractie_naam)
-
-    # SPARQL query to get members of a specific party
+    
+    # SPARQL query to get members and voting statistics for a specific party
     query = f"""
     PREFIX tk: <http://www.semanticweb.org/twanh/ontologies/2025/9/tk/>
-    SELECT ?persoonNaam
+
+    SELECT ?persoonNaam (COUNT(DISTINCT ?zaakVoor) AS ?stemmenVoor) (COUNT(DISTINCT ?zaakTegen) AS ?stemmenTegen) (COUNT(DISTINCT ?zaakNietDeelgenomen) AS ?stemmenNietDeelgenomen)
     WHERE {{
+      # Find the fractie by name
       ?fractie a tk:Fractie ;
-               tk:naam "{decoded_fractie_naam}" ;
-               tk:heeftLid ?persoon .
+               tk:naam "{decoded_fractie_naam}" .
+      
+      # Get all members of this fractie
+      ?fractie tk:heeftLid ?persoon .
       ?persoon tk:naam ?persoonNaam .
+      
+      # OPTIONAL blocks to count votes in each category
+      OPTIONAL {{ ?fractie tk:heeftVoorGestemd ?zaakVoor . }}
+      OPTIONAL {{ ?fractie tk:heeftTegenGestemd ?zaakTegen . }}
+      OPTIONAL {{ ?fractie tk:heeftNietDeelgenomen ?zaakNietDeelgenomen . }}
     }}
+    GROUP BY ?persoonNaam
     ORDER BY ?persoonNaam
     """
-
+    
     results = get_db_results(query)
-    leden = [
-        result['persoonNaam']['value']
-        for result in results['results']['bindings']
-    ]
+    
+    leden = []
+    # Initialize vote_counts; we only need one set of counts for the whole party
+    vote_counts = {
+        'voor': 0,
+        'tegen': 0,
+        'niet_deelgenomen': 0
+    }
 
-    # You can also fetch the party details again if needed
-    # For now, we'll just pass the name and the members
+    bindings = results['results']['bindings']
+    if bindings:
+        # Since the vote counts are the same for every member of the party,
+        # we can just take the counts from the first result.
+        first_result = bindings[0]
+        vote_counts['voor'] = int(first_result['stemmenVoor']['value'])
+        vote_counts['tegen'] = int(first_result['stemmenTegen']['value'])
+        vote_counts['niet_deelgenomen'] = int(first_result['stemmenNietDeelgenomen']['value'])
+        
+        # Get the list of all members
+        for result in bindings:
+            leden.append(result['persoonNaam']['value'])
+
     return render_template(
-        'fractie.html',
-        fractie_naam=decoded_fractie_naam,
+        'fractie.html', 
+        fractie_naam=decoded_fractie_naam, 
         leden=leden,
+        vote_counts=vote_counts  # Pass the vote counts to the template
     )
 
 
