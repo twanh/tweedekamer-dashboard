@@ -2,14 +2,18 @@ import argparse
 import datetime
 import logging
 import os
+import time
 
 import requests
-from models import Fractie
 from models import Zaak
 from models import ZaakSoort
 from rdflib import Graph
+from requests.exceptions import JSONDecodeError
 
 from scraper import TkScraper
+
+MAX_RETRIES = 3
+RETRY_DELAY = 5  # seconds
 
 
 def create_arg_parser():
@@ -21,7 +25,8 @@ def create_arg_parser():
         '--graphdb-url',
         type=str,
         default=os.environ.get(
-            'GRAPHDB_URL', 'http://localhost:7200/repositories/tk_repo/statements',
+            'GRAPHDB_URL',
+            'http://localhost:7200/repositories/tk_repo/statements',
         ),
         help='The URL of the GraphDB instance.',
     )
@@ -56,35 +61,39 @@ def _upload_graph(g: Graph, url: str) -> None:
         logging.error(f'Error uploading data to GraphDB: {e}')
 
 
-def _run_scraper(
+def _scrape_zaken(
+    scraper: TkScraper,
     start_date: datetime.datetime,
     end_date: datetime.datetime,
-) -> tuple[list[Fractie], list[Zaak]]:
+    zaak_soort: ZaakSoort = ZaakSoort.MOTIE,
+) -> list[Zaak]:
 
-    scraper = TkScraper(verbose=False)
+    logging.info(
+        f'Scraping zaken ({zaak_soort}) from {start_date} to {end_date}',
+    )
 
-    fracties = scraper.get_all_fracties(populate_members=True)
+    for attempt in range(MAX_RETRIES):
+        try:
+            logging.info(f'Fetching zaken (Attempt {attempt + 1})...')
+            zaken = scraper.get_all_zaken(
+                zaak_type=zaak_soort,
+                start_date=start_date,
+                end_date=end_date,
+            )
+            return zaken
 
-    all_zaken = []
-    wanted_zaak_soorten = [
-        ZaakSoort.MOTIE,
-        ZaakSoort.WETSVOORSTEL,
-        ZaakSoort.AMENDEMENT,
-        ZaakSoort.INITIATIEF_WETGEVING,
-    ]
+        except JSONDecodeError as e:
+            logging.error(f'JSON decode error fetching zaken: {e}')
+            logging.info(f'Retrying in {RETRY_DELAY} seconds...')
+            time.sleep(RETRY_DELAY)
 
-    for zaak_type in wanted_zaak_soorten:
-        logging.info(
-            f'Fetching all zaken of type {zaak_type.value} between {start_date} and {end_date}',
-        )
-        zaken = scraper.get_all_zaken(
-            zaak_type=zaak_type,
-            start_date=start_date,
-            end_date=end_date,
-        )
-        all_zaken.extend(zaken)
+        except Exception as e:
+            logging.error(f'Error fetching zaken: {e}')
+            logging.info(f'Retrying in {RETRY_DELAY} seconds...')
+            time.sleep(RETRY_DELAY)
 
-    return fracties, all_zaken
+    logging.error('Failed to fetch zaken after multiple attempts.')
+    return []
 
 
 def main() -> int:
@@ -96,22 +105,74 @@ def main() -> int:
     start_date = datetime.datetime.strptime(args.start_date, '%Y-%m-%d')
     end_date = datetime.datetime.strptime(args.end_date, '%Y-%m-%d')
 
-    # Run the scraper
-    fracties, zaken = _run_scraper(start_date, end_date)
-
-    # Create the graph
+    # Initialize the scraper and the graph
+    scraper = TkScraper(verbose=False)
     g = Graph()
     g.bind('tk', 'http://www.semanticweb.org/twanh/ontologies/2025/9/tk/')
 
+    # Run the scraper
+    fracties = []
+
+    for attempt in range(MAX_RETRIES):
+        try:
+            logging.info(f'Fetching all fracties (Attempt {attempt + 1})...')
+            fracties = scraper.get_all_fracties(populate_members=True)
+            break
+        except Exception as e:
+            logging.error(f'Error fetching fracties: {e}')
+            logging.info(f'Retrying in {RETRY_DELAY} seconds...')
+            time.sleep(RETRY_DELAY)
+
+    if not fracties:
+        logging.error('Failed to fetch fracties after multiple attempts.')
+        return 1
+
+    # Add fracties to the graph
     for fractie in fracties:
         fractie.to_rdf(g)
 
+    # Update the graphdb
     _upload_graph(g, args.graphdb_url)
 
-    for zaak in zaken:
-        zaak.to_rdf(g)
+    # Scrape zaken day by day based on the start and end date
+    current_date = start_date
+    n_zaken = 0
+    while current_date <= end_date:
 
-    _upload_graph(g, args.graphdb_url)
+        logging.info(f'Scraping zaken for date: {current_date.date()}')
+        next_date = current_date + datetime.timedelta(days=1)
+
+        zaak_types = [
+            ZaakSoort.MOTIE,
+            ZaakSoort.AMENDEMENT,
+            ZaakSoort.WETSVOORSTEL,
+            ZaakSoort.INITIATIEF_WETGEVING,
+        ]
+
+        for zaak_type in zaak_types:
+            logging.info(f'Scraping zaken of type: {zaak_type}')
+
+            zaken = _scrape_zaken(
+                scraper,
+                current_date,
+                next_date,
+                zaak_type,
+            )
+
+            n_zaken += len(zaken)
+
+            for zaak in zaken:
+                zaak.to_rdf(g)
+
+        # Upload the graph after each day's scraping
+        _upload_graph(g, args.graphdb_url)
+
+        # Move to the next date
+        current_date = next_date
+
+    logging.info('Scraping and uploading completed successfully.')
+    logging.info(f'Total fracties scraped: {len(fracties)}')
+    logging.info(f'Total zaken scraped: {n_zaken}')
 
     return 0
 
