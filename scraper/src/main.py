@@ -26,7 +26,7 @@ def create_arg_parser():
         type=str,
         default=os.environ.get(
             'GRAPHDB_URL',
-            'http://localhost:7200/repositories/tk_repo/statements',
+            'http://localhost:7200/repositories/tk_kb/statements',
         ),
         help='The URL of the GraphDB instance.',
     )
