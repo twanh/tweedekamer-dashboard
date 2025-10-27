@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+    .agreement-high { background-color: #c8e6c9 !important; }
+    .agreement-medium-high { background-color: #e8f5e9 !important; }
+    .agreement-medium { background-color: #fff9c4 !important; }
+    .agreement-medium-low { background-color: #ffe0b2 !important; }
+
+    .agreement-low { background-color: #ffcdd2 !important; }
+</style>
+
+<div class="container">
+    <h1 class="text-center">Partij Overeenkomsten</h1>
+
+    <p class="text-left my-4">
+        Deze tabel laat de overeenkomsten zien tussen de verschillende partijen in de Tweede Kamer.
+        De percentage is berekend op basis van de stemmen van de partijen in de Tweede Kamer.
+        Een hoge overeenkomst betekent dat de partijen vaak het zelfde stemmen op de zelfde zaken.
+    </p>
+
+    <table class="table table-bordered">
+    <thead>
+        <tr>
+            <th></th>
+            {% for col_party in parties %}
+                <th class="text-center"><a href="/fractie/{{ col_party }}" class="text-dark text-decoration-none">{{ col_party }}</a></th>
+            {% endfor %}
+        </tr>
+    </thead>
+    <tbody>
+        {% for row_party in parties %}
+        <tr>
+            <th scope="row"><a href="/fractie/{{ row_party }}" class="text-dark text-decoration-none">{{ row_party }}</a></th>
+            {% for col_party in parties %}
+                {% set agreement_pct = agreement_matrix[row_party][col_party] %}
+                {% if agreement_pct is none %}
+                    <td class="text-center text-muted">—</td>
+                {% else %}
+                    {# Determine color class based on agreement percentage #}
+                    {% set color_class = '' %}
+                    {% if agreement_pct >= 80 %}
+                        {% set color_class = 'agreement-high' %}
+                    {% elif agreement_pct >= 60 %}
+                        {% set color_class = 'agreement-medium-high' %}
+                    {% elif agreement_pct >= 40 %}
+                        {% set color_class = 'agreement-medium' %}
+                    {% elif agreement_pct >= 20 %}
+                        {% set color_class = 'agreement-medium-low' %}
+                    {% else %}
+                        {% set color_class = 'agreement-low' %}
+                    {% endif %}
+                    <td class="text-center {% if row_party == col_party %}font-weight-bold{% endif %} {{ color_class }}">
+                        {{ ('%.1f'|format(agreement_pct)) }}%
+                    </td>
+                {% endif %}
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </tbody>
+    </table>
+
+</div>
+
+{% endblock %}
