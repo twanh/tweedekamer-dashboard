@@ -399,12 +399,59 @@ def fractie_detail(fractie_naam):
         for res in leden_results['results']['bindings']
     ]
 
+    # Recent zaken the fractie voted on (with their vote)
+    recent_zaken_query = f"""
+    PREFIX tk: <http://www.semanticweb.org/twanh/ontologies/2025/9/tk/>
+    SELECT ?zaakNummer ?beschrijving ?datum (SUM(?voor) AS ?stemmenVoor) (SUM(?tegen) AS ?stemmenTegen) (SUM(?nietDeelgenomen) AS ?stemmenNietDeelgenomen)
+    WHERE {{
+      ?fractie a tk:Fractie ;
+               tk:naam "{decoded_fractie_naam}" .
+
+      ?zaak a tk:Zaak ;
+            tk:nummer ?zaakNummer ;
+            tk:beschrijving ?beschrijving .
+      OPTIONAL {{ ?zaak tk:indieningsDatum ?datum . }}
+
+      BIND(IF(EXISTS {{ ?fractie tk:heeftVoorGestemd ?zaak }}, 1, 0) AS ?voor)
+      BIND(IF(EXISTS {{ ?fractie tk:heeftTegenGestemd ?zaak }}, 1, 0) AS ?tegen)
+      BIND(IF(EXISTS {{ ?fractie tk:heeftNietDeelgenomen ?zaak }}, 1, 0) AS ?nietDeelgenomen)
+    }}
+    GROUP BY ?zaakNummer ?beschrijving ?datum
+    ORDER BY DESC(?datum) ?zaakNummer
+    LIMIT 10
+    """
+
+    recent_results = get_db_results(recent_zaken_query)
+
+    recent_zaken = []
+    for res in recent_results['results']['bindings']:
+        vote_label = 'Onbekend'
+        stemmen_voor = int(res.get('stemmenVoor', {}).get('value', '0'))
+        stemmen_tegen = int(res.get('stemmenTegen', {}).get('value', '0'))
+        stemmen_niet = int(
+            res.get('stemmenNietDeelgenomen', {}).get('value', '0'),
+        )
+        if stemmen_voor == 1:
+            vote_label = 'Voor'
+        elif stemmen_tegen == 1:
+            vote_label = 'Tegen'
+        elif stemmen_niet == 1:
+            vote_label = 'Niet Deelgenomen'
+
+        recent_zaken.append({
+            'nummer': res['zaakNummer']['value'],
+            'beschrijving': res['beschrijving']['value'],
+            'datum': res.get('datum', {}).get('value'),
+            'vote': vote_label,
+        })
+
     return render_template(
         'fractie.html',
         fractie_naam=decoded_fractie_naam,
         leden=leden,
         total_votes=total_votes,
         onderwerp_votes=onderwerp_votes,
+        recent_zaken=recent_zaken,
     )
 
 

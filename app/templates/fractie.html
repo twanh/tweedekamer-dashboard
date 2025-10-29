@@ -5,7 +5,7 @@
 {% block content %}
 <div class="container">
     <h1 class="text-center mb-4">Fractie Details: {{ fractie_naam }}</h1>
-    
+
     <div class="row">
         <div class="col-md-8">
             <h2 class="text-center">Stemgedrag per Onderwerp</h2>
@@ -26,6 +26,40 @@
                 </div>
             {% else %}
                 <p class="text-center">Geen leden gevonden voor deze fractie.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <h2 class="text-center">Recent gestemde zaken</h2>
+            {% if recent_zaken %}
+                <ul class="list-group">
+                    {% for zaak in recent_zaken %}
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                                <div class="fw-bold">
+                                    <a href="{{ url_for('zaak_detail', zaak_nummer=zaak['nummer']) }}">Zaak {{ zaak['nummer'] }}</a>
+                                </div>
+                                {{ zaak['beschrijving'] }}
+                                {% if zaak['datum'] %}
+                                    <div class="text-muted small">Datum: {{ zaak['datum'] }}</div>
+                                {% endif %}
+                            </div>
+                            {% if zaak['vote'] == 'Voor' %}
+                                <span class="badge bg-success rounded-pill">{{ zaak['vote'] }}</span>
+                            {% elif zaak['vote'] == 'Tegen' %}
+                                <span class="badge bg-danger rounded-pill">{{ zaak['vote'] }}</span>
+                            {% elif zaak['vote'] == 'Niet Deelgenomen' %}
+                                <span class="badge bg-secondary rounded-pill">{{ zaak['vote'] }}</span>
+                            {% else %}
+                                <span class="badge bg-light text-dark rounded-pill">{{ zaak['vote'] }}</span>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="text-center">Geen recente stemmingen gevonden.</p>
             {% endif %}
         </div>
     </div>
