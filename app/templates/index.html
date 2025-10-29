@@ -6,25 +6,31 @@
 {% block content %}
 
 <div class="container">
-    <!-- <canvas id="fractieChart" width="400" height="200"></canvas>
-
-    <hr class="my-4"> -->
-
     <h1 class="text-center">Algemene trends</h1>
 
-<div class="my-5">
-    <h4 class="text-center mb-4">Zaken per Type per Maand in 2025</h4>
-    <canvas id="motiesPerMonthChart" width="600" height="300"></canvas>
-</div>
+    <div class="my-5">
+        <h4 class="text-center mb-4">Zaken per Type per Maand in 2025</h4>
+        <canvas id="motiesPerMonthChart" width="600" height="300"></canvas>
+    </div>
 
-<div class="my-5">
-    <h4 class="text-center mb-4">Zaken per Onderwerp per Maand in 2025</h4>
-    <canvas id="topicsPerMonthChart" width="600" height="350"></canvas>
-</div>
+    <div class="my-5">
+        <h4 class="text-center mb-4">Zaken per Onderwerp per Maand in 2025</h4>
+        <canvas id="topicsPerMonthChart" width="600" height="350"></canvas>
+    </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-    // Shared, capitalized month labels for reuse
+    <div class="my-5">
+        <h4 class="text-center mb-4">Stemgedrag per Partij (Voor/Tegen/Niet Deelgenomen)</h4>
+        <canvas id="partijVoteStackedChart" width="600" height="350"></canvas>
+    </div>
+
+    <div class="my-5">
+        <h4 class="text-center mb-4">Aangenomen vs Verworpen per Onderwerp</h4>
+        <canvas id="acceptanceByTopicChart" width="600" height="350"></canvas>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+
     const MONTH_LABELS = [
         'Januari', 'Februari', 'Maart', 'April', 'Mei', 'Juni',
         'Juli', 'Augustus', 'September', 'Oktober', 'November', 'December'
@@ -32,6 +38,7 @@
 
     // Topics stacked bar chart
     const topicsRawData = {{ topics_per_month | tojson }};
+
     const topics2025 = topicsRawData.filter(item => item.jaar === 2025);
     const uniqueTopics = [...new Set(topics2025.map(item => item.topic))].sort();
     const months = Array.from({ length: 12 }, (_, i) => i + 1);
@@ -40,10 +47,12 @@
         const data = months.map(m =>
             (topics2025.find(item => item.topic === topic && item.maand === m) || { aantal: 0 }).aantal
         );
+        // Generate colors for each topic
         const colorSeed = Math.abs(topic.split('').reduce((p, c) => p + c.charCodeAt(0), 0));
         const r = 150 + (colorSeed * 37) % 90;
         const g = 110 + (colorSeed * 59) % 100;
         const b = 130 + (colorSeed * 41) % 100;
+
         return {
             label: topic,
             data: data,
@@ -53,6 +62,7 @@
     });
 
     const ctxTopics = document.getElementById('topicsPerMonthChart').getContext('2d');
+
     const topicsPerMonthChart = new Chart(ctxTopics, {
         type: 'bar',
         data: {
@@ -84,10 +94,10 @@
     const type2025 = typeRaw.filter(item => item.jaar === 2025);
     const labels = MONTH_LABELS; // fixed 12 months
 
-    // Collect unique types present (e.g., Motie, Amendement, Wetsvoorstel, etc.)
+    // Get the unique types
     const uniqueTypes = [...new Set(type2025.map(i => i.type))].sort();
 
-    // Build a lookup of counts per type per month (1..12)
+    // Create counts
     const typeToMonthlyCounts = uniqueTypes.reduce((acc, type) => {
         acc[type] = Array.from({ length: 12 }, (_, idx) => {
             const month = idx + 1;
@@ -97,7 +107,7 @@
         return acc;
     }, {});
 
-    // Simple deterministic color by type
+    // Colors for each topic
     const colorFor = (type) => {
         const seed = Math.abs(type.split('').reduce((p, c) => p + c.charCodeAt(0), 0));
         const r = 80 + (seed * 29) % 150;
@@ -122,8 +132,9 @@
         };
     });
 
-    const ctx = document.getElementById('motiesPerMonthChart').getContext('2d');
 
+    // Show the amount of each Zaak Type per month in a line chart
+    const ctx = document.getElementById('motiesPerMonthChart').getContext('2d');
     const COLORS = [
         "#e6194b", "#3cb44b", "#ffe119", "#4363d8", "#f58231",
     ];
@@ -164,11 +175,137 @@
             }
         }
     });
+
+    // Partij stemgedrag stacked bar chart
+    const partijVoteRaw = {{ partij_vote_behaviour | tojson }};
+    const partijLabels = partijVoteRaw.map(item => item.partij);
+    const votesVoor = partijVoteRaw.map(item => item["Voor"] || 0);
+    const votesTegen = partijVoteRaw.map(item => item["Tegen"] || 0);
+    const votesOnthouden = partijVoteRaw.map(item => item["Niet Deelgenomen"] || 0);
+
+    // Convert absolute counts to %
+    const totals = partijVoteRaw.map((item, idx) => {
+        const total = votesVoor[idx] + votesTegen[idx] + votesOnthouden[idx];
+        return total > 0 ? total : 0;
+    });
+    const toPct = (value, idx) => (totals[idx] ? (value / totals[idx]) * 100 : 0);
+    const pctVoor = votesVoor.map((v, i) => toPct(v, i));
+    const pctTegen = votesTegen.map((v, i) => toPct(v, i));
+    const pctOnthouden = votesOnthouden.map((v, i) => toPct(v, i));
+
+    const partijCtx = document.getElementById('partijVoteStackedChart').getContext('2d');
+    const partijVoteStackedChart = new Chart(partijCtx, {
+        type: 'bar',
+        data: {
+            labels: partijLabels,
+            datasets: [
+                {
+                    label: 'Voor',
+                    data: pctVoor,
+                    backgroundColor: 'rgba(60, 179, 113, 0.8)', // mediumseagreen
+                    stack: 'votes'
+                },
+                {
+                    label: 'Tegen',
+                    data: pctTegen,
+                    backgroundColor: 'rgba(220, 53, 69, 0.85)', // bootstrap danger
+                    stack: 'votes'
+                },
+                {
+                    label: 'Niet Deelgenomen',
+                    data: pctOnthouden,
+                    backgroundColor: 'rgba(108, 117, 125, 0.8)', // bootstrap secondary
+                    stack: 'votes'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'top' },
+                title: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)}%`
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    stacked: true,
+                    title: { display: true, text: 'Partij' }
+                },
+                y: {
+                    stacked: true,
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: {
+                        callback: (value) => `${value}%`
+                    },
+                    title: { display: true, text: 'Percentage' }
+                }
+            }
+        }
+    });
+
+    // Aangenomen vs Verworpen per Onderwerp (Grouped Bar)
+    const acceptanceRaw = {{ zaak_topic_acceptance | tojson }};
+    const acceptanceSorted = [...acceptanceRaw].sort((a, b) => (b.Aangenomen + b.Verworpen) - (a.Aangenomen + a.Verworpen));
+    const topicLabels = acceptanceSorted.map(row => row.topic);
+    const dataAangenomenAbs = acceptanceSorted.map(row => row.Aangenomen || 0);
+    const dataVerworpenAbs = acceptanceSorted.map(row => row.Verworpen || 0);
+    const totalsPerTopic = acceptanceSorted.map((row, i) => (dataAangenomenAbs[i] + dataVerworpenAbs[i]) || 0);
+    const toPctTopic = (val, i) => (totalsPerTopic[i] ? (val / totalsPerTopic[i]) * 100 : 0);
+    const dataAangenomen = dataAangenomenAbs.map((v, i) => toPctTopic(v, i));
+    const dataVerworpen = dataVerworpenAbs.map((v, i) => toPctTopic(v, i));
+
+    const acceptanceCtx = document.getElementById('acceptanceByTopicChart').getContext('2d');
+    const acceptanceByTopicChart = new Chart(acceptanceCtx, {
+        type: 'bar',
+        data: {
+            labels: topicLabels,
+            datasets: [
+                {
+                    label: 'Aangenomen',
+                    data: dataAangenomen,
+                    backgroundColor: 'rgba(60, 179, 113, 0.85)'
+                },
+                {
+                    label: 'Verworpen',
+                    data: dataVerworpen,
+                    backgroundColor: 'rgba(220, 53, 69, 0.85)'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'top' },
+                title: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)}%`
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    stacked: true,
+                    title: { display: true, text: 'Onderwerp' }
+                },
+                y: {
+                    stacked: true,
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: {
+                        callback: (value) => `${value}%`
+                    },
+                    title: { display: true, text: 'Percentage' }
+                }
+            }
+        }
+    });
 </script>
-
-
-
-
 </div>
 
 {% endblock %}

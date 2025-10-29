@@ -108,10 +108,114 @@ def index():
             'aantal': aantal,
         })
 
+    # Stemgedrag partijen voor/tegen/onthouden
+    vote_behaviour_parties_qeury = """
+    PREFIX tk: <http://www.semanticweb.org/twanh/ontologies/2025/9/tk/>
+    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+    SELECT ?partijNaam ?stemSoort (COUNT(?zaak) AS ?aantalStemmen)
+    WHERE {
+    {
+        ?partij rdf:type tk:Fractie ;
+                tk:heeftVoorGestemd ?zaak .
+        BIND("Voor" AS ?stemSoort)
+    }
+    UNION
+    {
+        ?partij rdf:type tk:Fractie ;
+                tk:heeftTegenGestemd ?zaak .
+        BIND("Tegen" AS ?stemSoort)
+    }
+    UNION
+    {
+        ?partij rdf:type tk:Fractie ;
+                tk:heeftNietDeelgenomen ?zaak .
+        BIND("Niet Deelgenomen" AS ?stemSoort)
+    }
+
+    # Get the party's afkorting for the label
+    ?partij tk:afkorting ?partijNaam .
+    }
+    GROUP BY ?partijNaam ?stemSoort
+    ORDER BY ?partijNaam ?stemSoort
+    """
+    vote_behaviour_parties_results = get_db_results(
+        vote_behaviour_parties_qeury,
+    )
+
+    partijen_votes = {}
+    for result in vote_behaviour_parties_results['results']['bindings']:
+        partij = result['partijNaam']['value']
+        stem_soort = result['stemSoort']['value']
+        aantal = int(result['aantalStemmen']['value'])
+        if partij not in partijen_votes:
+            partijen_votes[partij] = {
+                'Voor': 0,
+                'Tegen': 0,
+                'Niet Deelgenomen': 0,
+            }
+        partijen_votes[partij][stem_soort] = aantal
+
+    # Flatten the data to make the rendring on the frontend easier
+    partij_vote_behaviour = []
+    for partij, stem_gedrag in partijen_votes.items():
+        entry = {
+            'partij': partij,
+            'Voor': stem_gedrag.get('Voor', 0),
+            'Tegen': stem_gedrag.get('Tegen', 0),
+            'Niet Deelgenomen': stem_gedrag.get('Niet Deelgenomen', 0),
+        }
+        partij_vote_behaviour.append(entry)
+
+    zaak_acceptance_per_topic_query = """
+    PREFIX tk: <http://www.semanticweb.org/twanh/ontologies/2025/9/tk/>
+    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+    # For each topic: count how many were 'Stemmen - aangenomen' vs 'Stemmen - verworpen'
+    SELECT ?topicName ?resultaat (COUNT(DISTINCT ?zaak) AS ?aantalZaken)
+    WHERE {
+        ?zaak tk:besluitResultaat ?resultaat ;
+              tk:heeftOnderwerp ?onderwerp .
+        ?onderwerp tk:onderwerpType ?topicName .
+        FILTER(?resultaat IN ("Stemmen - aangenomen", "Stemmen - verworpen"))
+    }
+    GROUP BY ?topicName ?resultaat
+    ORDER BY ?topicName ?resultaat
+    """
+
+    zaak_acceptance_per_topic_results = get_db_results(
+        zaak_acceptance_per_topic_query,
+    )
+
+    # Transform results for frontend: normalize raw labels and aggregate per topic
+    acceptance_by_topic = {}
+    for result in zaak_acceptance_per_topic_results['results']['bindings']:
+        topic = result['topicName']['value']
+        raw_result = result['resultaat']['value']
+        aantal = int(result['aantalZaken']['value'])
+
+        if raw_result == 'Stemmen - aangenomen':
+            norm_label = 'Aangenomen'
+        elif raw_result == 'Stemmen - verworpen':
+            norm_label = 'Verworpen'
+        else:
+            # Skip any other outcomes
+            continue
+
+        if topic not in acceptance_by_topic:
+            acceptance_by_topic[topic] = {
+                'topic': topic, 'Aangenomen': 0, 'Verworpen': 0,
+            }
+        acceptance_by_topic[topic][norm_label] += aantal
+
+    zaak_acceptance = list(acceptance_by_topic.values())
+
     return render_template(
         'index.html',
         topics_per_month=topics_per_month,
         zaken_per_type_per_month=zaken_per_type_per_month,
+        partij_vote_behaviour=partij_vote_behaviour,
+        zaak_topic_acceptance=zaak_acceptance,
     )
 
 
