@@ -441,11 +441,15 @@ def zaak_detail(zaak_nummer):
     # Query to get the voting record of each party for a specific zaak
     query = f"""
     PREFIX tk: <http://www.semanticweb.org/twanh/ontologies/2025/9/tk/>
-    SELECT ?fractieNaam (SUM(?voor) AS ?stemmenVoor) (SUM(?tegen) AS ?stemmenTegen) (SUM(?nietDeelgenomen) AS ?stemmenNietDeelgenomen) ?beschrijving ?besluitResultaat
+    SELECT ?fractieNaam (SUM(?voor) AS ?stemmenVoor) (SUM(?tegen) AS ?stemmenTegen) (SUM(?nietDeelgenomen) AS ?stemmenNietDeelgenomen) ?beschrijving ?onderwerp ?besluitResultaat
     WHERE {{
       ?zaak tk:nummer "{decoded_zaak_nummer}" ;
             tk:beschrijving ?beschrijving .
       OPTIONAL {{ ?zaak tk:besluitResultaat ?besluitResultaat . }}
+      OPTIONAL {{
+        ?zaak tk:heeftOnderwerp ?onderwerpInst .
+        ?onderwerpInst tk:onderwerpType ?onderwerp .
+      }}
 
       ?fractie a tk:Fractie ;
                tk:naam ?fractieNaam .
@@ -455,7 +459,7 @@ def zaak_detail(zaak_nummer):
       BIND(IF(EXISTS {{ ?fractie tk:heeftTegenGestemd ?zaak }}, 1, 0) AS ?tegen)
       BIND(IF(EXISTS {{ ?fractie tk:heeftNietDeelgenomen ?zaak }}, 1, 0) AS ?nietDeelgenomen)
     }}
-    GROUP BY ?fractieNaam ?beschrijving ?besluitResultaat
+    GROUP BY ?fractieNaam ?beschrijving ?onderwerp ?besluitResultaat
     ORDER BY ?fractieNaam
     """
     results = get_db_results(query)
@@ -469,6 +473,7 @@ def zaak_detail(zaak_nummer):
         zaak_info = {
             'beschrijving': bindings[0]['beschrijving']['value'],
             'resultaat': bindings[0].get('besluitResultaat', {}).get('value', 'Nog niet bekend'),
+            'onderwerp': bindings[0].get('onderwerp', {}).get('value', 'Niet bekend'),
         }
         # Get voting data for each party
         for result in bindings:

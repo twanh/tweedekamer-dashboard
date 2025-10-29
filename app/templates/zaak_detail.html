@@ -6,7 +6,8 @@
 <div class="container">
     {% if zaak_info %}
         <h1 class="text-center mb-2">{{ zaak_info.beschrijving }}</h1>
-        <h4 class="text-center text-muted mb-4">Besluit: {{ zaak_info.resultaat }}</h4>
+        <h4 class="text-center text-muted"><span class="fw-bold">Besluit: </span>{{ zaak_info.resultaat }}</h4>
+        <h4 class="text-center text-muted mb-4"><span class="fw-bold">Onderwerp: </span>{{zaak_info.onderwerp }}</h4>
 
         <table class="table">
             <thead class="table-dark">
@@ -20,7 +21,11 @@
             <tbody>
                 {% for stemming in stemmingen %}
                 <tr>
-                    <td>{{ stemming.fractie }}</td>
+                    <td>
+                        <a href="{{ url_for('fractie_detail', fractie_naam=stemming.fractie|urlencode) }}" style="color: inherit; text-decoration: none;">
+                            {{ stemming.fractie }}
+                        </a>
+                    </td>
                     <td class="text-center">{% if stemming.voor > 0 %}✅{% endif %}</td>
                     <td class="text-center">{% if stemming.tegen > 0 %}❌{% endif %}</td>
                     <td class="text-center">{% if stemming.niet_deelgenomen > 0 %}➖{% endif %}</td>
