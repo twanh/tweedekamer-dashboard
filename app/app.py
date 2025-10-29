@@ -19,6 +19,22 @@ def get_db_results(query):
     return sparql.query().convert()
 
 
+def get_wikidata_results(query):
+    """Query Wikidata SPARQL endpoint with a proper User-Agent."""
+    sparql = SPARQLWrapper('https://query.wikidata.org/sparql')
+    sparql.setQuery(query)
+    sparql.setReturnFormat(JSON)
+    # Be a good citizen; identify this app
+    try:
+        sparql.setAgent(
+            'tweedekamer-dashboard/1.0 (https://github.com/; contact: example@example.com)',
+        )
+    except Exception:
+        # Older versions may not support setAgent; proceed without failing
+        pass
+    return sparql.query().convert()
+
+
 @app.route('/')
 def index():
 
@@ -398,6 +414,48 @@ def fractie_detail(fractie_naam):
         for res in leden_results['results']['bindings']
     ]
 
+    # Fetch Wikidata info for this fractie by Dutch label
+    wikidata_query = f"""
+    PREFIX wd: <http://www.wikidata.org/entity/>
+    PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+    PREFIX wikibase: <http://wikiba.se/ontology#>
+    PREFIX bd: <http://www.bigdata.com/rdf#>
+
+    SELECT ?item ?itemLabel ?shortName ?website ?inception ?memberCount WHERE {{
+      ?item wdt:P31 wd:Q7278 ;  # instance of political party
+            rdfs:label "{decoded_fractie_naam}"@nl .
+      OPTIONAL {{ ?item wdt:P1813 ?shortName . }}
+      OPTIONAL {{ ?item wdt:P856 ?website . }}
+      OPTIONAL {{ ?item wdt:P571 ?inception . }}
+      OPTIONAL {{ ?item wdt:P2124 ?memberCount . }}
+      SERVICE wikibase:label {{ bd:serviceParam wikibase:language "nl,en" }}
+    }}
+    LIMIT 1
+    """
+
+    wikidata_res = get_wikidata_results(wikidata_query)
+    wikidata_info = None
+    if wikidata_res and wikidata_res.get('results', {}).get('bindings'):
+        b = wikidata_res['results']['bindings'][0]
+        # Format inception date nicely if present
+        inception_raw = b.get('inception', {}).get('value')
+        inception_display = None
+        if inception_raw:
+            try:
+                # Expected format: YYYY-MM-DD or full xsd:dateTime
+                inception_display = inception_raw[:10]
+            except Exception:
+                inception_display = inception_raw
+
+        wikidata_info = {
+            'label': b.get('itemLabel', {}).get('value'),
+            'shortName': b.get('shortName', {}).get('value'),
+            'website': b.get('website', {}).get('value'),
+            'inception': inception_display,
+            'memberCount': b.get('memberCount', {}).get('value'),
+        }
+
     # Recent zaken the fractie voted on (with their vote)
     recent_zaken_query = f"""
     PREFIX tk: <http://www.semanticweb.org/twanh/ontologies/2025/9/tk/>
@@ -451,6 +509,8 @@ def fractie_detail(fractie_naam):
         total_votes=total_votes,
         onderwerp_votes=onderwerp_votes,
         recent_zaken=recent_zaken,
+        wikidata=wikidata_info,
+        member_count=len(leden),
     )
 
 
