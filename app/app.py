@@ -533,6 +533,108 @@ def zaak_detail(zaak_nummer):
 
     return render_template('zaak_detail.html', zaak_info=zaak_info, stemmingen=stemmingen)
 
+
+@app.route('/persoon/<path:persoon_naam>')
+def persoon_detail(persoon_naam):
+    decoded_persoon_naam = unquote(persoon_naam)
+
+    person_topic_query = f"""
+    PREFIX tk: <http://www.semanticweb.org/twanh/ontologies/2025/9/tk/>
+
+    SELECT ?onderwerpType (COUNT(DISTINCT ?zaakVoor) AS ?stemmenVoor) (COUNT(DISTINCT ?zaakTegen) AS ?stemmenTegen) (COUNT(DISTINCT ?zaakNietDeelgenomen) AS ?stemmenNietDeelgenomen)
+    WHERE {{
+      ?persoon a tk:Persoon ;
+               tk:naam "{decoded_persoon_naam}" .
+
+      VALUES ?voteProperty {{ tk:heeftVoorGestemd tk:heeftTegenGestemd tk:heeftNietDeelgenomen }}
+
+      ?persoon ?voteProperty ?zaak .
+
+      ?zaak tk:heeftOnderwerp ?onderwerp .
+      ?onderwerp tk:onderwerpType ?onderwerpType .
+
+      BIND(IF(?voteProperty = tk:heeftVoorGestemd, ?zaak, 1/0) AS ?zaakVoor)
+      BIND(IF(?voteProperty = tk:heeftTegenGestemd, ?zaak, 1/0) AS ?zaakTegen)
+      BIND(IF(?voteProperty = tk:heeftNietDeelgenomen, ?zaak, 1/0) AS ?zaakNietDeelgenomen)
+    }}
+    GROUP BY ?onderwerpType
+    ORDER BY ?onderwerpType
+    """
+
+    topic_results = get_db_results(person_topic_query)
+
+    onderwerp_votes = {}
+    total_votes = {'voor': 0, 'tegen': 0, 'niet_deelgenomen': 0}
+
+    for result in topic_results['results']['bindings']:
+        onderwerp = result['onderwerpType']['value']
+        voor = int(result['stemmenVoor']['value'])
+        tegen = int(result['stemmenTegen']['value'])
+        niet_deelgenomen = int(result['stemmenNietDeelgenomen']['value'])
+
+        onderwerp_votes[onderwerp] = {
+            'voor': voor,
+            'tegen': tegen,
+            'niet_deelgenomen': niet_deelgenomen,
+        }
+
+        total_votes['voor'] += voor
+        total_votes['tegen'] += tegen
+        total_votes['niet_deelgenomen'] += niet_deelgenomen
+
+    recent_person_zaken_query = f"""
+    PREFIX tk: <http://www.semanticweb.org/twanh/ontologies/2025/9/tk/>
+    SELECT ?zaakNummer ?beschrijving ?datum (SUM(?voor) AS ?stemmenVoor) (SUM(?tegen) AS ?stemmenTegen) (SUM(?nietDeelgenomen) AS ?stemmenNietDeelgenomen)
+    WHERE {{
+      ?persoon a tk:Persoon ;
+               tk:naam "{decoded_persoon_naam}" .
+
+      ?zaak a tk:Zaak ;
+            tk:nummer ?zaakNummer ;
+            tk:beschrijving ?beschrijving .
+      OPTIONAL {{ ?zaak tk:indieningsDatum ?datum . }}
+
+      BIND(IF(EXISTS {{ ?persoon tk:heeftVoorGestemd ?zaak }}, 1, 0) AS ?voor)
+      BIND(IF(EXISTS {{ ?persoon tk:heeftTegenGestemd ?zaak }}, 1, 0) AS ?tegen)
+      BIND(IF(EXISTS {{ ?persoon tk:heeftNietDeelgenomen ?zaak }}, 1, 0) AS ?nietDeelgenomen)
+    }}
+    GROUP BY ?zaakNummer ?beschrijving ?datum
+    ORDER BY DESC(?datum) ?zaakNummer
+    LIMIT 10
+    """
+
+    recent_results = get_db_results(recent_person_zaken_query)
+
+    recent_zaken = []
+    for res in recent_results['results']['bindings']:
+        vote_label = 'Onbekend'
+        stemmen_voor = int(res.get('stemmenVoor', {}).get('value', '0'))
+        stemmen_tegen = int(res.get('stemmenTegen', {}).get('value', '0'))
+        stemmen_niet = int(
+            res.get('stemmenNietDeelgenomen', {}).get('value', '0'),
+        )
+        if stemmen_voor == 1:
+            vote_label = 'Voor'
+        elif stemmen_tegen == 1:
+            vote_label = 'Tegen'
+        elif stemmen_niet == 1:
+            vote_label = 'Niet Deelgenomen'
+
+        recent_zaken.append({
+            'nummer': res['zaakNummer']['value'],
+            'beschrijving': res['beschrijving']['value'],
+            'datum': res.get('datum', {}).get('value'),
+            'vote': vote_label,
+        })
+
+    return render_template(
+        'persoon.html',
+        persoon_naam=decoded_persoon_naam,
+        total_votes=total_votes,
+        onderwerp_votes=onderwerp_votes,
+        recent_zaken=recent_zaken,
+    )
+
 # @app.route('/zaken')
 # def zaken():
 #     # Example Query: Get all zaken with their titles and onderwerpen

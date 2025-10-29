@@ -17,7 +17,7 @@
             {% if leden %}
                 <ul class="list-group" id="ledenLijst" style="max-height: 500px; overflow-y: auto;">
                     {% for lid in leden %}
-                        <li class="list-group-item">{{ lid }}</li>
+                        <li class="list-group-item"><a href="{{ url_for('persoon_detail', persoon_naam=lid) }}">{{ lid }}</a></li>
                     {% endfor %}
                 </ul>
                 <div class="text-center mt-2">
@@ -32,7 +32,7 @@
 
     <div class="row mt-4">
         <div class="col-12">
-            <h2 class="text-center">Recent gestemde zaken</h2>
+            <h2 class="text-center">Stemmen op recente zaken</h2>
             {% if recent_zaken %}
                 <ul class="list-group">
                     {% for zaak in recent_zaken %}
@@ -74,7 +74,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     // Bar chart
-    const onderwerpVotes = {{ onderwerp_votes | tojson }};
+    const onderwerpVotes = JSON.parse('{{ onderwerp_votes | tojson | safe }}');
     const labels = Object.keys(onderwerpVotes);
     const dataVoor = labels.map(onderwerp => onderwerpVotes[onderwerp].voor);
     const dataTegen = labels.map(onderwerp => onderwerpVotes[onderwerp].tegen);
