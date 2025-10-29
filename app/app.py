@@ -1,6 +1,8 @@
 from urllib.parse import unquote
 
-from flask import Flask, render_template, request
+from flask import Flask
+from flask import render_template
+from flask import request
 from SPARQLWrapper import JSON
 from SPARQLWrapper import SPARQLWrapper
 
@@ -522,18 +524,42 @@ def zaken_lijst():
     resultaat_filter = request.args.get('resultaat', '')
     zaak_type_filter = request.args.get('zaak_type', '')
 
-    # SPARQL query om filteropties (dropdowns) op te halen
-    filter_options_query = """
+    # Pagination parameters
+    page = request.args.get('page', 1, type=int)
+    per_page = 20
+    offset = (page - 1) * per_page
+
+    # SPARQL query om filteropties (dropdowns) op te halen - optimized to use separate queries
+    # This is faster than one query with OPTIONALs that can cause cartesian products
+    besluit_query = """
     PREFIX tk: <http://www.semanticweb.org/twanh/ontologies/2025/9/tk/>
-    SELECT DISTINCT ?besluitResultaat ?zaakSoort WHERE {
-        OPTIONAL { ?zaak a tk:Zaak ; tk:besluitResultaat ?besluitResultaat . }
-        OPTIONAL { ?zaak2 a tk:Zaak ; tk:zaakSoort ?zaakSoort . }
+    SELECT DISTINCT ?besluitResultaat WHERE {
+        ?zaak a tk:Zaak ;
+              tk:besluitResultaat ?besluitResultaat .
     }
+    ORDER BY ?besluitResultaat
     """
-    filter_results = get_db_results(filter_options_query)
-    
-    besluit_opties = sorted(list(set(res['besluitResultaat']['value'] for res in filter_results['results']['bindings'] if 'besluitResultaat' in res)))
-    zaak_type_opties = sorted(list(set(res['zaakSoort']['value'] for res in filter_results['results']['bindings'] if 'zaakSoort' in res)))
+
+    zaak_soort_query = """
+    PREFIX tk: <http://www.semanticweb.org/twanh/ontologies/2025/9/tk/>
+    SELECT DISTINCT ?zaakSoort WHERE {
+        ?zaak a tk:Zaak ;
+              tk:zaakSoort ?zaakSoort .
+    }
+    ORDER BY ?zaakSoort
+    """
+
+    besluit_results = get_db_results(besluit_query)
+    zaak_soort_results = get_db_results(zaak_soort_query)
+
+    besluit_opties = [
+        res['besluitResultaat']['value']
+        for res in besluit_results['results']['bindings']
+    ]
+    zaak_type_opties = [
+        res['zaakSoort']['value']
+        for res in zaak_soort_results['results']['bindings']
+    ]
 
     onderwerp_opties = [
         'Binnenlandse Zaken en Koninkrijksrelaties',
@@ -546,64 +572,144 @@ def zaken_lijst():
         'Onderwijs Cultuur en Wetenschap',
         'Sociale Zaken en Werkgelegenheid',
         'Volksgezondheid en Zorg',
-        'Other'
+        'Other',
     ]
 
-    query = """
+    # Optimized query structure: apply filters early and use DISTINCT to avoid duplicates
+    # Build the base pattern and filters
+    base_patterns = [
+        '?zaak a tk:Zaak',
+        '?zaak tk:nummer ?zaakNummer',
+        '?zaak tk:beschrijving ?beschrijving',
+        '?zaak tk:indieningsDatum ?indieningsDatum',
+    ]
+
+    # Apply date filters early (before optional clauses)
+    early_filters = []
+    if start_date:
+        early_filters.append(
+            f'FILTER (?indieningsDatum >= "{start_date}"^^xsd:date)',
+        )
+    if end_date:
+        early_filters.append(
+            f'FILTER (?indieningsDatum <= "{end_date}"^^xsd:date)',
+        )
+
+    # Handle onderwerp filter - if filtering by onderwerp, make it required (not optional)
+    # When not filtering, use simple optional to avoid performance issues
+    onderwerp_pattern = ''
+    if onderwerp_filter:
+        # If filtering by onderwerp, make it required for better performance
+        base_patterns.append('?zaak tk:heeftOnderwerp ?onderwerp')
+        base_patterns.append('?onderwerp tk:onderwerpType ?onderwerpType')
+        early_filters.append(f'FILTER (?onderwerpType = "{onderwerp_filter}")')
+    else:
+        # Simple optional - DISTINCT will handle duplicates
+        onderwerp_pattern = 'OPTIONAL { ?zaak tk:heeftOnderwerp ?onderwerp . ?onderwerp tk:onderwerpType ?onderwerpType . }'
+
+    # Optional fields (applied after filtering reduces result set)
+    optional_patterns = []
+    if not resultaat_filter:
+        optional_patterns.append('?zaak tk:besluitResultaat ?besluitResultaat')
+    else:
+        base_patterns.append('?zaak tk:besluitResultaat ?besluitResultaat')
+        early_filters.append(
+            f'FILTER (?besluitResultaat = "{resultaat_filter}")',
+        )
+
+    if not zaak_type_filter:
+        optional_patterns.append('?zaak tk:zaakSoort ?zaakSoort')
+    else:
+        base_patterns.append('?zaak tk:zaakSoort ?zaakSoort')
+        early_filters.append(f'FILTER (?zaakSoort = "{zaak_type_filter}")')
+
+    # Build the query with optimal structure
+    where_clause = ' .\n        '.join(base_patterns) + ' .'
+    if early_filters:
+        where_clause += '\n        ' + '\n        '.join(early_filters)
+    if optional_patterns:
+        where_clause += '\n        OPTIONAL { ' + \
+            ' . '.join(optional_patterns) + ' . }'
+    if onderwerp_pattern and not onderwerp_filter:
+        where_clause += '\n        ' + onderwerp_pattern
+
+    # Main query with pagination - using DISTINCT to prevent duplicates from multiple onderwerpen
+    # Fetch extra items when not filtering by onderwerp to account for potential duplicates
+    limit = per_page + 1
+    if not onderwerp_filter:
+        # Fetch more to account for possible duplicates from multiple onderwerpen per zaak
+        limit = per_page + 5
+
+    query = f"""
     PREFIX tk: <http://www.semanticweb.org/twanh/ontologies/2025/9/tk/>
     PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-    SELECT ?zaakNummer ?beschrijving ?besluitResultaat ?indieningsDatum ?zaakSoort ?onderwerpType
-    WHERE {
-        ?zaak a tk:Zaak ;
-              tk:nummer ?zaakNummer ;
-              tk:beschrijving ?beschrijving ;
-              tk:indieningsDatum ?indieningsDatum .
-        OPTIONAL { ?zaak tk:besluitResultaat ?besluitResultaat . }
-        OPTIONAL { ?zaak tk:zaakSoort ?zaakSoort . }
-        OPTIONAL { ?zaak tk:heeftOnderwerp ?onderwerp . ?onderwerp tk:onderwerpType ?onderwerpType . }
+    SELECT DISTINCT ?zaakNummer ?beschrijving ?besluitResultaat ?indieningsDatum ?zaakSoort ?onderwerpType
+    WHERE {{
+        {where_clause}
+    }} ORDER BY DESC(?indieningsDatum)
+    LIMIT {limit} OFFSET {offset}
     """
-    
-    if start_date:
-        query += f'FILTER (?indieningsDatum >= "{start_date}"^^xsd:date)\n'
-    if end_date:
-        query += f'FILTER (?indieningsDatum <= "{end_date}"^^xsd:date)\n'
-    if onderwerp_filter:
-        query += f'FILTER (?onderwerpType = "{onderwerp_filter}")\n'
-    if resultaat_filter:
-        query += f'FILTER (?besluitResultaat = "{resultaat_filter}")\n'
-    if zaak_type_filter:
-        query += f'FILTER (?zaakSoort = "{zaak_type_filter}")\n'
-        
-    query += "} ORDER BY DESC(?indieningsDatum)"
-    
+
     results = get_db_results(query)
+    bindings = results['results']['bindings']
+
+    # Deduplicate by zaakNummer to avoid showing same zaak multiple times (from multiple onderwerpen)
+    # Keep track of seen zaakNummers to maintain pagination integrity
+    seen_zaken = set()
+    unique_bindings = []
+    for result in bindings:
+        zaak_nummer = result['zaakNummer']['value']
+        if zaak_nummer not in seen_zaken:
+            seen_zaken.add(zaak_nummer)
+            unique_bindings.append(result)
+
+    # Determine if there is a next page
+    # If we have more unique results than per_page, there's definitely a next page
+    # If we have exactly per_page unique results but fetched more, there might be more
+    has_next = len(unique_bindings) > per_page
+    if has_next or (len(bindings) == limit and len(unique_bindings) == per_page):
+        # If we fetched the full limit and still got a full page after dedup, likely more exist
+        has_next = True
+    unique_bindings = unique_bindings[:per_page]
+
     zaken = []
-    for result in results['results']['bindings']:
+    for result in unique_bindings:
         raw_date = result['indieningsDatum']['value'].split('T')[0]
-        
+
         zaken.append({
             'nummer': result['zaakNummer']['value'],
             'beschrijving': result['beschrijving']['value'],
             'resultaat': result.get('besluitResultaat', {}).get('value', 'Nog niet bekend'),
             'datum': raw_date,
             'type': result.get('zaakSoort', {}).get('value', 'Onbekend'),
-            'onderwerp': result.get('onderwerpType', {}).get('value', 'Geen onderwerp')
+            'onderwerp': result.get('onderwerpType', {}).get('value', 'Geen onderwerp'),
         })
-        
+
+    # Calculate pagination info without running a heavy COUNT query
+    has_prev = page > 1
+    # total count unknown in this lightweight mode
+    total_zaken = None
+    total_pages = None
+
     return render_template(
-        'zaken.html', 
+        'zaken.html',
         zaken=zaken,
-        aantal_zaken=len(zaken), 
+        aantal_zaken=total_zaken,
+        page=page,
+        per_page=per_page,
+        total_pages=total_pages,
+        has_prev=has_prev,
+        has_next=has_next,
         filters={
             'start_date': start_date,
             'end_date': end_date,
             'onderwerp_type': onderwerp_filter,
             'resultaat': resultaat_filter,
-            'zaak_type': zaak_type_filter
+            'zaak_type': zaak_type_filter,
         },
         onderwerp_opties=onderwerp_opties,
         besluit_opties=besluit_opties,
-        zaak_type_opties=zaak_type_opties
+        zaak_type_opties=zaak_type_opties,
     )
 
 
