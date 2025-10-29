@@ -3,26 +3,87 @@
 {% block title %} Overzicht van Zaken {% endblock %}
 
 {% block content %}
-<!-- TODO: Add filter for date, onderwerp, indiener, aangenomen/niet aangenomen, zaak type (motie, wetsvoorstel, etc.) -->
 <div class="container">
     <h1 class="text-center mb-4">Overzicht van Alle Zaken</h1>
-    <table class="table table-hover">
-        <thead>
-            <tr>
-                <th scope="col">Zaaknummer</th>
-                <th scope="col">Beschrijving</th>
-                <th scope="col">Resultaat</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for zaak in zaken %}
-            <tr>
-                <td><a href="{{ url_for('zaak_detail', zaak_nummer=zaak.nummer) }}">{{ zaak.nummer }}</a></td>
-                <td>{{ zaak.beschrijving }}</td>
-                <td>{{ zaak.resultaat }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+
+    <form method="GET" action="{{ url_for('zaken_lijst') }}" class="mb-4 p-3 border rounded">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label for="onderwerp_type" class="form-label">Filter op onderwerp</label>
+                <select id="onderwerp_type" name="onderwerp_type" class="form-select">
+                    <option value="">Alle onderwerpen</option>
+                    {% for optie in onderwerp_opties %}
+                        <option value="{{ optie }}" {% if filters.onderwerp_type == optie %}selected{% endif %}>{{ optie }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="start_date" class="form-label">Vanaf datum</label>
+                <input type="date" class="form-control" id="start_date" name="start_date" value="{{ filters.start_date }}">
+            </div>
+            <div class="col-md-2">
+                <label for="end_date" class="form-label">Tot datum</label>
+                <input type="date" class="form-control" id="end_date" name="end_date" value="{{ filters.end_date }}">
+            </div>
+            <div class="col-md-2">
+                <label for="resultaat" class="form-label">Besluit</label>
+                <select id="resultaat" name="resultaat" class="form-select">
+                    <option value="">Alle</option>
+                    {% for optie in besluit_opties %}
+                        <option value="{{ optie }}" {% if filters.resultaat == optie %}selected{% endif %}>{{ optie }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="zaak_type" class="form-label">Zaak Type</label>
+                <select id="zaak_type" name="zaak_type" class="form-select">
+                    <option value="">Alle</option>
+                    {% for optie in zaak_type_opties %}
+                        <option value="{{ optie }}" {% if filters.zaak_type == optie %}selected{% endif %}>{{ optie }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="row mt-3">
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">Filter</button>
+                <a href="{{ url_for('zaken_lijst') }}" class="btn btn-secondary">Reset</a>
+            </div>
+        </div>
+    </form>
+
+    <div class="d-flex justify-content-between align-items-center mb-2">
+    <h4 class="mb-0">Resultaten</h4>
+    <span class="badge bg-primary rounded-pill fs-6 p-2">{{ aantal_zaken }} zaken gevonden</span>
+</div>
+
+<table class="table table-hover">
+    <thead>
+        <tr>
+            <th scope="col">Zaaknummer</th>
+            <th scope="col">Beschrijving</th>
+            <th scope="col">Onderwerp</th>
+            <th scope="col">Soort Zaak</th>
+            <th scope="col">Indieningsdatum</th>
+            <th scope="col">Resultaat</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for zaak in zaken %}
+        <tr>
+            <td><a href="{{ url_for('zaak_detail', zaak_nummer=zaak.nummer) }}">{{ zaak.nummer }}</a></td>
+            <td>{{ zaak.beschrijving }}</td>
+            <td>{{ zaak.onderwerp }}</td>
+            <td>{{ zaak.type }}</td>
+            <td>{{ zaak.datum }}</td>
+            <td>{{ zaak.resultaat }}</td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="6" class="text-center">Geen zaken gevonden die aan de criteria voldoen.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
 </div>
 {% endblock %}
