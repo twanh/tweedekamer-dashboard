@@ -209,54 +209,127 @@ def fractie_detail(fractie_naam):
         onderwerp_votes=onderwerp_votes
     )
 
-
 @app.route('/zaken')
-def zaken():
-    # Example Query: Get all zaken with their titles and onderwerpen
+def zaken_lijst():
+    # Query to get all zaken with their description and result
     query = """
-    SELECT ?zaak ?titel ?beschrijving ?besluitResultaat ?besluitStemmingsoort ?dossierNummer ?indieningsDatum
-       ?isAfgedaan ?kabinetsappreciatie ?nummer ?termijn ?uuid ?volgnummer ?zaakSoort ?title
+    PREFIX tk: <http://www.semanticweb.org/twanh/ontologies/2025/9/tk/>
+    SELECT ?zaakNummer ?beschrijving ?besluitResultaat
     WHERE {
-    ?zaak a tk:Zaak .
-
-    OPTIONAL { ?zaak tk:titel ?titel . }
-    OPTIONAL { ?zaak tk:beschrijving ?beschrijving . }
-    OPTIONAL { ?zaak tk:besluitResultaat ?besluitResultaat . }
-    OPTIONAL { ?zaak tk:besluitStemmingsoort ?besluitStemmingsoort . }
-    OPTIONAL { ?zaak tk:dossierNummer ?dossierNummer . }
-    OPTIONAL { ?zaak tk:indieningsDatum ?indieningsDatum . }
-    OPTIONAL { ?zaak tk:isAfgedaan ?isAfgedaan . }
-    OPTIONAL { ?zaak tk:kabinetsappreciatie ?kabinetsappreciatie . }
-    OPTIONAL { ?zaak tk:nummer ?nummer . }
-    OPTIONAL { ?zaak tk:termijn ?termijn . }
-    OPTIONAL { ?zaak tk:uuid ?uuid . }
-    OPTIONAL { ?zaak tk:volgnummer ?volgnummer . }
-    OPTIONAL { ?zaak tk:zaakSoort ?zaakSoort . }
+        ?zaak a tk:Zaak ;
+              tk:nummer ?zaakNummer ;
+              tk:beschrijving ?beschrijving .
+        OPTIONAL { ?zaak tk:besluitResultaat ?besluitResultaat . }
     }
-
+    ORDER BY ?zaakNummer
     """
-
     results = get_db_results(query)
     zaken = []
-
     for result in results['results']['bindings']:
         zaken.append({
-            'titel': result.get('titel', {}).get('value', 'Geen titel gevonden.'),
-            'beschrijving': result.get('beschrijving', {}).get('value', 'Geen beschrijving gevonden.'),
-            'besluitResultaat': result.get('besluitResultaat', {}).get('value', 'Geen besluitResultaat gevonden.'),
-            'besluitStemmingsoort': result.get('besluitStemmingsoort', {}).get('value', 'Geen besluitStemmingsoort gevonden.'),
-            'dossierNummer': result.get('dossierNummer', {}).get('value', 'Geen dossierNummer gevonden.'),
-            'indieningsDatum': result.get('indieningsDatum', {}).get('value', 'Geen indieningsDatum gevonden.'),
-            'isAfgedaan': result.get('isAfgedaan', {}).get('value', 'Geen isAfgedaan gevonden.'),
-            'kabinetsappreciatie': result.get('kabinetsappreciatie', {}).get('value', 'Geen kabinetsappreciatie gevonden.'),
-            'nummer': result.get('nummer', {}).get('value', 'Geen nummer gevonden.'),
-            'termijn': result.get('termijn', {}).get('value', 'Geen termijn gevonden.'),
-            'uuid': result.get('uuid', {}).get('value', 'Geen uuid gevonden.'),
-            'volgnummer': result.get('volgnummer', {}).get('value', 'Geen volgnummer gevonden.'),
-            'zaakSoort': result.get('zaakSoort', {}).get('value', 'Geen zaakSoort gevonden.'),
+            'nummer': result['zaakNummer']['value'],
+            'beschrijving': result['beschrijving']['value'],
+            'resultaat': result.get('besluitResultaat', {}).get('value', 'Nog niet bekend')
         })
-
     return render_template('zaken.html', zaken=zaken)
+
+
+@app.route('/zaak/<path:zaak_nummer>')
+def zaak_detail(zaak_nummer):
+    # Decode the zaak nummer
+    decoded_zaak_nummer = unquote(zaak_nummer)
+
+    # Query to get the voting record of each party for a specific zaak
+    query = f"""
+    PREFIX tk: <http://www.semanticweb.org/twanh/ontologies/2025/9/tk/>
+    SELECT ?fractieNaam (SUM(?voor) AS ?stemmenVoor) (SUM(?tegen) AS ?stemmenTegen) (SUM(?nietDeelgenomen) AS ?stemmenNietDeelgenomen) ?beschrijving ?besluitResultaat
+    WHERE {{
+      ?zaak tk:nummer "{decoded_zaak_nummer}" ;
+            tk:beschrijving ?beschrijving .
+      OPTIONAL {{ ?zaak tk:besluitResultaat ?besluitResultaat . }}
+
+      ?fractie a tk:Fractie ;
+               tk:naam ?fractieNaam .
+
+      # Use BIND to check vote for each fractie and assign a 1 or 0
+      BIND(IF(EXISTS {{ ?fractie tk:heeftVoorGestemd ?zaak }}, 1, 0) AS ?voor)
+      BIND(IF(EXISTS {{ ?fractie tk:heeftTegenGestemd ?zaak }}, 1, 0) AS ?tegen)
+      BIND(IF(EXISTS {{ ?fractie tk:heeftNietDeelgenomen ?zaak }}, 1, 0) AS ?nietDeelgenomen)
+    }}
+    GROUP BY ?fractieNaam ?beschrijving ?besluitResultaat
+    ORDER BY ?fractieNaam
+    """
+    results = get_db_results(query)
+
+    stemmingen = []
+    zaak_info = {}
+    bindings = results['results']['bindings']
+    
+    if bindings:
+        # Get zaak info from the first result
+        zaak_info = {
+            'beschrijving': bindings[0]['beschrijving']['value'],
+            'resultaat': bindings[0].get('besluitResultaat', {}).get('value', 'Nog niet bekend')
+        }
+        # Get voting data for each party
+        for result in bindings:
+            stemmingen.append({
+                'fractie': result['fractieNaam']['value'],
+                'voor': int(result['stemmenVoor']['value']),
+                'tegen': int(result['stemmenTegen']['value']),
+                'niet_deelgenomen': int(result['stemmenNietDeelgenomen']['value'])
+            })
+            
+    return render_template('zaak_detail.html', zaak_info=zaak_info, stemmingen=stemmingen)
+
+# @app.route('/zaken')
+# def zaken():
+#     # Example Query: Get all zaken with their titles and onderwerpen
+#     query = """
+#     SELECT ?zaak ?titel ?beschrijving ?besluitResultaat ?besluitStemmingsoort ?dossierNummer ?indieningsDatum
+#        ?isAfgedaan ?kabinetsappreciatie ?nummer ?termijn ?uuid ?volgnummer ?zaakSoort ?title
+#     WHERE {
+#     ?zaak a tk:Zaak .
+
+#     OPTIONAL { ?zaak tk:titel ?titel . }
+#     OPTIONAL { ?zaak tk:beschrijving ?beschrijving . }
+#     OPTIONAL { ?zaak tk:besluitResultaat ?besluitResultaat . }
+#     OPTIONAL { ?zaak tk:besluitStemmingsoort ?besluitStemmingsoort . }
+#     OPTIONAL { ?zaak tk:dossierNummer ?dossierNummer . }
+#     OPTIONAL { ?zaak tk:indieningsDatum ?indieningsDatum . }
+#     OPTIONAL { ?zaak tk:isAfgedaan ?isAfgedaan . }
+#     OPTIONAL { ?zaak tk:kabinetsappreciatie ?kabinetsappreciatie . }
+#     OPTIONAL { ?zaak tk:nummer ?nummer . }
+#     OPTIONAL { ?zaak tk:termijn ?termijn . }
+#     OPTIONAL { ?zaak tk:uuid ?uuid . }
+#     OPTIONAL { ?zaak tk:volgnummer ?volgnummer . }
+#     OPTIONAL { ?zaak tk:zaakSoort ?zaakSoort . }
+#     }
+
+#     """
+
+#     results = get_db_results(query)
+#     zaken = []
+
+#     for result in results['results']['bindings']:
+#         zaken.append({
+#             'titel': result.get('titel', {}).get('value', 'Geen titel gevonden.'),
+#             'beschrijving': result.get('beschrijving', {}).get('value', 'Geen beschrijving gevonden.'),
+#             'besluitResultaat': result.get('besluitResultaat', {}).get('value', 'Geen besluitResultaat gevonden.'),
+#             'besluitStemmingsoort': result.get('besluitStemmingsoort', {}).get('value', 'Geen besluitStemmingsoort gevonden.'),
+#             'dossierNummer': result.get('dossierNummer', {}).get('value', 'Geen dossierNummer gevonden.'),
+#             'indieningsDatum': result.get('indieningsDatum', {}).get('value', 'Geen indieningsDatum gevonden.'),
+#             'isAfgedaan': result.get('isAfgedaan', {}).get('value', 'Geen isAfgedaan gevonden.'),
+#             'kabinetsappreciatie': result.get('kabinetsappreciatie', {}).get('value', 'Geen kabinetsappreciatie gevonden.'),
+#             'nummer': result.get('nummer', {}).get('value', 'Geen nummer gevonden.'),
+#             'termijn': result.get('termijn', {}).get('value', 'Geen termijn gevonden.'),
+#             'uuid': result.get('uuid', {}).get('value', 'Geen uuid gevonden.'),
+#             'volgnummer': result.get('volgnummer', {}).get('value', 'Geen volgnummer gevonden.'),
+#             'zaakSoort': result.get('zaakSoort', {}).get('value', 'Geen zaakSoort gevonden.'),
+#         })
+
+#     return render_template('zaken.html', zaken=zaken)
+
 
 
 if __name__ == '__main__':

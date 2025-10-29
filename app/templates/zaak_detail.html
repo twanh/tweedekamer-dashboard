@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %} Details van Zaak {% endblock %}
+
+{% block content %}
+<div class="container">
+    {% if zaak_info %}
+        <h1 class="text-center mb-2">{{ zaak_info.beschrijving }}</h1>
+        <h4 class="text-center text-muted mb-4">Besluit: {{ zaak_info.resultaat }}</h4>
+
+        <table class="table">
+            <thead class="table-dark">
+                <tr>
+                    <th scope="col">Fractie</th>
+                    <th scope="col" class="text-center">Voor</th>
+                    <th scope="col" class="text-center">Tegen</th>
+                    <th scope="col" class="text-center">Niet Deelgenomen</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for stemming in stemmingen %}
+                <tr>
+                    <td>{{ stemming.fractie }}</td>
+                    <td class="text-center">{% if stemming.voor > 0 %}✅{% endif %}</td>
+                    <td class="text-center">{% if stemming.tegen > 0 %}❌{% endif %}</td>
+                    <td class="text-center">{% if stemming.niet_deelgenomen > 0 %}➖{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="text-center">Geen informatie gevonden voor deze zaak.</p>
+    {% endif %}
+
+    <div class="text-center mt-4">
+        <a href="{{ url_for('zaken_lijst') }}" class="btn btn-primary">Terug naar overzicht van zaken</a>
+    </div>
+</div>
+{% endblock %}
