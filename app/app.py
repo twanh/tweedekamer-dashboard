@@ -482,17 +482,25 @@ def zaken_lijst():
 
 @app.route('/zaak/<path:zaak_nummer>')
 def zaak_detail(zaak_nummer):
-    # Decode the zaak nummer
+
     decoded_zaak_nummer = unquote(zaak_nummer)
 
-    # Query to get the voting record of each party for a specific zaak
     query = f"""
     PREFIX tk: <http://www.semanticweb.org/twanh/ontologies/2025/9/tk/>
-    SELECT ?fractieNaam (SUM(?voor) AS ?stemmenVoor) (SUM(?tegen) AS ?stemmenTegen) (SUM(?nietDeelgenomen) AS ?stemmenNietDeelgenomen) ?beschrijving ?onderwerp ?besluitResultaat
+    SELECT ?fractieNaam
+           (SUM(?voor) AS ?stemmenVoor)
+           (SUM(?tegen) AS ?stemmenTegen)
+           (SUM(?nietDeelgenomen) AS ?stemmenNietDeelgenomen)
+           ?beschrijving ?onderwerp ?besluitResultaat
+           ?volgnummer ?indieningsDatum ?besluitStemmingsoort ?dossierNummer
     WHERE {{
       ?zaak tk:nummer "{decoded_zaak_nummer}" ;
             tk:beschrijving ?beschrijving .
       OPTIONAL {{ ?zaak tk:besluitResultaat ?besluitResultaat . }}
+      OPTIONAL {{ ?zaak tk:volgnummer ?volgnummer . }}
+      OPTIONAL {{ ?zaak tk:indieningsDatum ?indieningsDatum . }}
+      OPTIONAL {{ ?zaak tk:besluitStemmingsoort ?besluitStemmingsoort . }}
+      OPTIONAL {{ ?zaak tk:dossierNummer ?dossierNummer . }}
       OPTIONAL {{
         ?zaak tk:heeftOnderwerp ?onderwerpInst .
         ?onderwerpInst tk:onderwerpType ?onderwerp .
@@ -507,6 +515,7 @@ def zaak_detail(zaak_nummer):
       BIND(IF(EXISTS {{ ?fractie tk:heeftNietDeelgenomen ?zaak }}, 1, 0) AS ?nietDeelgenomen)
     }}
     GROUP BY ?fractieNaam ?beschrijving ?onderwerp ?besluitResultaat
+             ?volgnummer ?indieningsDatum ?besluitStemmingsoort ?dossierNummer
     ORDER BY ?fractieNaam
     """
     results = get_db_results(query)
@@ -521,6 +530,10 @@ def zaak_detail(zaak_nummer):
             'beschrijving': bindings[0]['beschrijving']['value'],
             'resultaat': bindings[0].get('besluitResultaat', {}).get('value', 'Nog niet bekend'),
             'onderwerp': bindings[0].get('onderwerp', {}).get('value', 'Niet bekend'),
+            'volgnummer': bindings[0].get('volgnummer', {}).get('value', 'Niet bekend'),
+            'indieningsDatum': bindings[0].get('indieningsDatum', {}).get('value', 'Niet bekend'),
+            'besluitStemmingsoort': bindings[0].get('besluitStemmingsoort', {}).get('value', 'Niet bekend'),
+            'dossierNummer': bindings[0].get('dossierNummer', {}).get('value', 'Niet bekend'),
         }
         # Get voting data for each party
         for result in bindings:
