@@ -1,7 +1,6 @@
 from urllib.parse import unquote
 
-from flask import Flask
-from flask import render_template
+from flask import Flask, render_template, request
 from SPARQLWrapper import JSON
 from SPARQLWrapper import SPARQLWrapper
 
@@ -410,27 +409,95 @@ def fractie_detail(fractie_naam):
 
 @app.route('/zaken')
 def zaken_lijst():
-    # Query to get all zaken with their description and result
+    start_date = request.args.get('start_date', '')
+    end_date = request.args.get('end_date', '')
+    onderwerp_filter = request.args.get('onderwerp_type', '')
+    resultaat_filter = request.args.get('resultaat', '')
+    zaak_type_filter = request.args.get('zaak_type', '')
+
+    # SPARQL query om filteropties (dropdowns) op te halen
+    filter_options_query = """
+    PREFIX tk: <http://www.semanticweb.org/twanh/ontologies/2025/9/tk/>
+    SELECT DISTINCT ?besluitResultaat ?zaakSoort WHERE {
+        OPTIONAL { ?zaak a tk:Zaak ; tk:besluitResultaat ?besluitResultaat . }
+        OPTIONAL { ?zaak2 a tk:Zaak ; tk:zaakSoort ?zaakSoort . }
+    }
+    """
+    filter_results = get_db_results(filter_options_query)
+    
+    besluit_opties = sorted(list(set(res['besluitResultaat']['value'] for res in filter_results['results']['bindings'] if 'besluitResultaat' in res)))
+    zaak_type_opties = sorted(list(set(res['zaakSoort']['value'] for res in filter_results['results']['bindings'] if 'zaakSoort' in res)))
+
+    onderwerp_opties = [
+        'Binnenlandse Zaken en Koninkrijksrelaties',
+        'Buitenlandse Zaken en Defensie',
+        'Economie en Financien',
+        'Infrastructuur en Waterstaat',
+        'Justitie en Veiligheid',
+        'Klimaat en Energie',
+        'Landbouw en Natuur',
+        'Onderwijs Cultuur en Wetenschap',
+        'Sociale Zaken en Werkgelegenheid',
+        'Volksgezondheid en Zorg',
+        'Other'
+    ]
+
     query = """
     PREFIX tk: <http://www.semanticweb.org/twanh/ontologies/2025/9/tk/>
-    SELECT ?zaakNummer ?beschrijving ?besluitResultaat
+    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+    SELECT ?zaakNummer ?beschrijving ?besluitResultaat ?indieningsDatum ?zaakSoort ?onderwerpType
     WHERE {
         ?zaak a tk:Zaak ;
               tk:nummer ?zaakNummer ;
-              tk:beschrijving ?beschrijving .
+              tk:beschrijving ?beschrijving ;
+              tk:indieningsDatum ?indieningsDatum .
         OPTIONAL { ?zaak tk:besluitResultaat ?besluitResultaat . }
-    }
-    ORDER BY ?zaakNummer
+        OPTIONAL { ?zaak tk:zaakSoort ?zaakSoort . }
+        OPTIONAL { ?zaak tk:heeftOnderwerp ?onderwerp . ?onderwerp tk:onderwerpType ?onderwerpType . }
     """
+    
+    if start_date:
+        query += f'FILTER (?indieningsDatum >= "{start_date}"^^xsd:date)\n'
+    if end_date:
+        query += f'FILTER (?indieningsDatum <= "{end_date}"^^xsd:date)\n'
+    if onderwerp_filter:
+        query += f'FILTER (?onderwerpType = "{onderwerp_filter}")\n'
+    if resultaat_filter:
+        query += f'FILTER (?besluitResultaat = "{resultaat_filter}")\n'
+    if zaak_type_filter:
+        query += f'FILTER (?zaakSoort = "{zaak_type_filter}")\n'
+        
+    query += "} ORDER BY DESC(?indieningsDatum)"
+    
     results = get_db_results(query)
     zaken = []
     for result in results['results']['bindings']:
+        raw_date = result['indieningsDatum']['value'].split('T')[0]
+        
         zaken.append({
             'nummer': result['zaakNummer']['value'],
             'beschrijving': result['beschrijving']['value'],
             'resultaat': result.get('besluitResultaat', {}).get('value', 'Nog niet bekend'),
+            'datum': raw_date,
+            'type': result.get('zaakSoort', {}).get('value', 'Onbekend'),
+            'onderwerp': result.get('onderwerpType', {}).get('value', 'Geen onderwerp')
         })
-    return render_template('zaken.html', zaken=zaken)
+        
+    return render_template(
+        'zaken.html', 
+        zaken=zaken,
+        aantal_zaken=len(zaken), 
+        filters={
+            'start_date': start_date,
+            'end_date': end_date,
+            'onderwerp_type': onderwerp_filter,
+            'resultaat': resultaat_filter,
+            'zaak_type': zaak_type_filter
+        },
+        onderwerp_opties=onderwerp_opties,
+        besluit_opties=besluit_opties,
+        zaak_type_opties=zaak_type_opties
+    )
 
 
 @app.route('/zaak/<path:zaak_nummer>')
