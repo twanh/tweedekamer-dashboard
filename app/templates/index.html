@@ -10,7 +10,164 @@
 
     <hr class="my-4"> -->
 
-    <h2 class="text-center">Home</h2>
+    <h1 class="text-center">Algemene trends</h1>
+
+<div class="my-5">
+    <h4 class="text-center mb-4">Zaken per Type per Maand in 2025</h4>
+    <canvas id="motiesPerMonthChart" width="600" height="300"></canvas>
+</div>
+
+<div class="my-5">
+    <h4 class="text-center mb-4">Zaken per Onderwerp per Maand in 2025</h4>
+    <canvas id="topicsPerMonthChart" width="600" height="350"></canvas>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Shared, capitalized month labels for reuse
+    const MONTH_LABELS = [
+        'Januari', 'Februari', 'Maart', 'April', 'Mei', 'Juni',
+        'Juli', 'Augustus', 'September', 'Oktober', 'November', 'December'
+    ];
+
+    // Topics stacked bar chart
+    const topicsRawData = {{ topics_per_month | tojson }};
+    const topics2025 = topicsRawData.filter(item => item.jaar === 2025);
+    const uniqueTopics = [...new Set(topics2025.map(item => item.topic))].sort();
+    const months = Array.from({ length: 12 }, (_, i) => i + 1);
+
+    const datasets = uniqueTopics.map(topic => {
+        const data = months.map(m =>
+            (topics2025.find(item => item.topic === topic && item.maand === m) || { aantal: 0 }).aantal
+        );
+        const colorSeed = Math.abs(topic.split('').reduce((p, c) => p + c.charCodeAt(0), 0));
+        const r = 150 + (colorSeed * 37) % 90;
+        const g = 110 + (colorSeed * 59) % 100;
+        const b = 130 + (colorSeed * 41) % 100;
+        return {
+            label: topic,
+            data: data,
+            backgroundColor: `rgba(${r},${g},${b},0.7)`,
+            stack: 'stack1'
+        };
+    });
+
+    const ctxTopics = document.getElementById('topicsPerMonthChart').getContext('2d');
+    const topicsPerMonthChart = new Chart(ctxTopics, {
+        type: 'bar',
+        data: {
+            labels: MONTH_LABELS,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'top' },
+                title: { display: false }
+            },
+            scales: {
+                x: {
+                    stacked: true,
+                    title: { display: true, text: "Maand in jaar 2025" }
+                },
+                y: {
+                    stacked: true,
+                    title: { display: true, text: "Aantal Zaken" },
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Zaken per type line chart
+    const typeRaw = {{ zaken_per_type_per_month|tojson }};
+    const type2025 = typeRaw.filter(item => item.jaar === 2025);
+    const labels = MONTH_LABELS; // fixed 12 months
+
+    // Collect unique types present (e.g., Motie, Amendement, Wetsvoorstel, etc.)
+    const uniqueTypes = [...new Set(type2025.map(i => i.type))].sort();
+
+    // Build a lookup of counts per type per month (1..12)
+    const typeToMonthlyCounts = uniqueTypes.reduce((acc, type) => {
+        acc[type] = Array.from({ length: 12 }, (_, idx) => {
+            const month = idx + 1;
+            const hit = type2025.find(i => i.type === type && i.maand === month);
+            return hit ? hit.aantal : 0;
+        });
+        return acc;
+    }, {});
+
+    // Simple deterministic color by type
+    const colorFor = (type) => {
+        const seed = Math.abs(type.split('').reduce((p, c) => p + c.charCodeAt(0), 0));
+        const r = 80 + (seed * 29) % 150;
+        const g = 80 + (seed * 41) % 150;
+        const b = 80 + (seed * 53) % 150;
+        return {
+            bg: `rgba(${r}, ${g}, ${b}, 0.15)`,
+            border: `rgb(${r}, ${g}, ${b})`
+        };
+    };
+
+    const lineDatasets = uniqueTypes.map(type => {
+        const { bg, border } = colorFor(type);
+        return {
+            label: type,
+            data: typeToMonthlyCounts[type],
+            backgroundColor: bg,
+            borderColor: border,
+            borderWidth: 2,
+            tension: 0.2,
+            fill: false
+        };
+    });
+
+    const ctx = document.getElementById('motiesPerMonthChart').getContext('2d');
+
+    const COLORS = [
+        "#e6194b", "#3cb44b", "#ffe119", "#4363d8", "#f58231",
+    ];
+
+    const typedLineDatasets = uniqueTypes.map((type, idx) => {
+        const color = COLORS[idx % COLORS.length];
+        return {
+            label: type,
+            data: typeToMonthlyCounts[type],
+            backgroundColor: color,
+            borderColor: color,
+            borderWidth: 2,
+            // Disable smoothing of lines
+            tension: 0,
+            fill: false
+        };
+    });
+
+    const motiesPerMonthChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: typedLineDatasets
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: { display: true, text: "Aantal Zaken" }
+                },
+                x: {
+                    title: { display: true, text: "Maand in jaar 2025" }
+                }
+            },
+            plugins: {
+                legend: { display: true, position: 'top' }
+            }
+        }
+    });
+</script>
+
+
+
 
 </div>
 
