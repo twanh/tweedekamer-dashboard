@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %} Details van {{ persoon_naam }} {% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="text-center mb-4">Persoon Details: {{ persoon_naam }}</h1>
+
+    <div class="row">
+        <div class="col-md-8">
+            <h2 class="text-center">Stemgedrag per Onderwerp</h2>
+            <canvas id="onderwerpBarChart"></canvas>
+        </div>
+
+        <div class="col-md-4">
+            <h2 class="text-center">Overzicht</h2>
+            <ul class="list-group">
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    Voor
+                    <span class="badge bg-success rounded-pill">{{ total_votes.voor }}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    Tegen
+                    <span class="badge bg-danger rounded-pill">{{ total_votes.tegen }}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    Niet Deelgenomen
+                    <span class="badge bg-secondary rounded-pill">{{ total_votes.niet_deelgenomen }}</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <h2 class="text-center">Stemmen op recente zaken</h2>
+            {% if recent_zaken %}
+                <ul class="list-group">
+                    {% for zaak in recent_zaken %}
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                                <div class="fw-bold">
+                                    <a href="{{ url_for('zaak_detail', zaak_nummer=zaak['nummer']) }}">Zaak {{ zaak['nummer'] }}</a>
+                                </div>
+                                {{ zaak['beschrijving'] }}
+                                {% if zaak['datum'] %}
+                                    <div class="text-muted small">Datum: {{ zaak['datum'] }}</div>
+                                {% endif %}
+                            </div>
+                            {% if zaak['vote'] == 'Voor' %}
+                                <span class="badge bg-success rounded-pill">{{ zaak['vote'] }}</span>
+                            {% elif zaak['vote'] == 'Tegen' %}
+                                <span class="badge bg-danger rounded-pill">{{ zaak['vote'] }}</span>
+                            {% elif zaak['vote'] == 'Niet Deelgenomen' %}
+                                <span class="badge bg-secondary rounded-pill">{{ zaak['vote'] }}</span>
+                            {% else %}
+                                <span class="badge bg-light text-dark rounded-pill">{{ zaak['vote'] }}</span>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="text-center">Geen recente stemmingen gevonden.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="text-center mt-4">
+        <a href="{{ url_for('fracties') }}" class="btn btn-primary">Terug naar fracties</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const onderwerpVotes = JSON.parse('{{ onderwerp_votes | tojson | safe }}');
+    const labels = Object.keys(onderwerpVotes);
+    const dataVoor = labels.map(onderwerp => onderwerpVotes[onderwerp].voor);
+    const dataTegen = labels.map(onderwerp => onderwerpVotes[onderwerp].tegen);
+    const dataNietDeelgenomen = labels.map(onderwerp => onderwerpVotes[onderwerp].niet_deelgenomen);
+    const ctx = document.getElementById('onderwerpBarChart').getContext('2d');
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                { label: 'Voor', data: dataVoor, backgroundColor: 'rgba(75, 192, 192, 0.5)', borderColor: 'rgb(75, 192, 192)', borderWidth: 1 },
+                { label: 'Tegen', data: dataTegen, backgroundColor: 'rgba(255, 99, 132, 0.5)', borderColor: 'rgb(255, 99, 132)', borderWidth: 1 },
+                { label: 'Niet Deelgenomen', data: dataNietDeelgenomen, backgroundColor: 'rgba(201, 203, 207, 0.5)', borderColor: 'rgb(201, 203, 207)', borderWidth: 1 }
+            ]
+        },
+        options: {
+            responsive: true,
+            scales: { y: { beginAtZero: true, title: { display: true, text: 'Aantal Stemmingen' } } },
+            plugins: { legend: { position: 'top' }, title: { display: true, text: 'Aantal stemmen per onderwerp' } }
+        }
+    });
+});
+</script>
+{% endblock %}
