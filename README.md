@@ -54,29 +54,57 @@ python scripts/add_ontology.py http://localhost:7200/repositories/tk_kb kb/tweed
 
 This will load the ontology definitions into GraphDB.
 
-### 4. Import Data
+### 4. Configure Scraper (Optional)
+
+If you want to use topic classification, create a `.env` file in the `scraper/` directory:
+
+The `.env` file should contain:
+```
+OPENAI_API_KEY=your_openai_api_key_here
+```
+
+**Note:** If you don't provide an `OPENAI_API_KEY`, you can still run the scraper but you'll need to use the `--disable-topic-classification` flag.
+
+### 5. Import Data
 
 You have two options for importing data:
 
 #### Option A: Run the Scraper
 
-Run the scraper to fetch data from the Tweede Kamer API and populate the knowledge base:
+The scraper runs automatically daily at 2:00 AM to fetch today's data. You can also run it manually:
 
 ```bash
-docker-compose exec scraper python scraper/src/main.py
+docker-compose exec scraper python src/main.py
 ```
 
 You can also specify custom date ranges:
 
 ```bash
-docker-compose exec scraper python scraper/src/main.py \
+docker-compose exec scraper python src/main.py \
   --start-date 2025-01-01 \
   --end-date 2025-12-31
 ```
 
-#### Option B: Upload Existing Data
+To disable topic classification (if you don't have an OpenAI API key):
 
-Upload a exesting data file to the repository. The datafile will be made public in a later stage.
+```bash
+docker-compose exec scraper python src/main.py \
+  --start-date 2025-01-01 \
+  --end-date 2025-12-31 \
+  --disable-topic-classification
+```
+
+#### Option B: Import Existing Data File via GraphDB Workbench
+
+You can also import the data directly into GraphDB using its web interface:
+
+1. Open the GraphDB Workbench at [http://localhost:7200](http://localhost:7200).
+2. Select your repository (e.g., `tk_kb`).
+3. In the left menu, go to **Import** > **Upload**.
+4. Click **Choose File** and select the file `kb/kb_data.rj` from your computer.
+5. Click **Import** to load the data into the repository.
+
+This will directly load the dataset from `kb_data.rj` into GraphDB without using the scraper.
 
 ## Accessing the Web App
 

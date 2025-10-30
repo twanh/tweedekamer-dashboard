@@ -29,3 +29,8 @@ services:
       - graphdb
     environment:
       - GRAPHDB_URL=http://graphdb:7200
+    command: >
+      sh -c "
+      echo '0 2 * * * cd /scraper && python src/main.py --start-date \$$(date +%%Y-%%m-%%d) --end-date \$$(date +%%Y-%%m-%%d) --graphdb-url http://graphdb:7200/repositories/tk_kb/statements' | crontab - &&
+      cron -f
+      "

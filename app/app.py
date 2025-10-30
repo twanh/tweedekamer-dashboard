@@ -480,10 +480,10 @@ def fractie_detail(fractie_naam):
       OPTIONAL {{ ?item wdt:P856 ?website . }}
       OPTIONAL {{ ?item wdt:P571 ?inception . }}
       OPTIONAL {{ ?item wdt:P2124 ?memberCount . }}
-      OPTIONAL {{ 
+      OPTIONAL {{
         ?item wdt:P1142 ?ideology .
       }}
-      SERVICE wikibase:label {{ 
+      SERVICE wikibase:label {{
         bd:serviceParam wikibase:language "nl,en" .
       }}
     }}
@@ -511,7 +511,7 @@ def fractie_detail(fractie_naam):
             # Extract the label value (SPARQL returns labels with language tags)
             # The label should already be filtered to Dutch in the query
             ideology_label = ideology_raw
-        
+
         wikidata_info = {
             'label': b.get('itemLabel', {}).get('value'),
             'shortName': b.get('shortName', {}).get('value'),
