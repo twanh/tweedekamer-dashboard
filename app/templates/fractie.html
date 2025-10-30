@@ -24,6 +24,9 @@
                         {% if wikidata.inception %}
                             <div><span class="fw-bold">Opgericht:</span> {{ wikidata.inception }}</div>
                         {% endif %}
+                        {% if wikidata.ideology %}
+                            <div><span class="fw-bold">Politieke ideologie:</span> {{ wikidata.ideology }}</div>
+                        {% endif %}
                         <div>
                             <span class="fw-bold">Aantal leden:</span> {{ wikidata.memberCount }}
                         </div>

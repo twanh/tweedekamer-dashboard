@@ -473,14 +473,19 @@ def fractie_detail(fractie_naam):
     PREFIX wikibase: <http://wikiba.se/ontology#>
     PREFIX bd: <http://www.bigdata.com/rdf#>
 
-    SELECT ?item ?itemLabel ?shortName ?website ?inception ?memberCount WHERE {{
+    SELECT ?item ?itemLabel ?shortName ?website ?inception ?memberCount ?ideology ?ideologyLabel WHERE {{
       ?item wdt:P31 wd:Q7278 ;  # instance of political party
             rdfs:label "{decoded_fractie_naam}"@nl .
       OPTIONAL {{ ?item wdt:P1813 ?shortName . }}
       OPTIONAL {{ ?item wdt:P856 ?website . }}
       OPTIONAL {{ ?item wdt:P571 ?inception . }}
       OPTIONAL {{ ?item wdt:P2124 ?memberCount . }}
-      SERVICE wikibase:label {{ bd:serviceParam wikibase:language "nl,en" }}
+      OPTIONAL {{ 
+        ?item wdt:P1142 ?ideology .
+      }}
+      SERVICE wikibase:label {{ 
+        bd:serviceParam wikibase:language "nl,en" .
+      }}
     }}
     LIMIT 1
     """
@@ -499,12 +504,21 @@ def fractie_detail(fractie_naam):
             except Exception:
                 inception_display = inception_raw
 
+        # Get Dutch label for ideology if available
+        ideology_label = None
+        ideology_raw = b.get('ideologyLabel', {}).get('value')
+        if ideology_raw:
+            # Extract the label value (SPARQL returns labels with language tags)
+            # The label should already be filtered to Dutch in the query
+            ideology_label = ideology_raw
+        
         wikidata_info = {
             'label': b.get('itemLabel', {}).get('value'),
             'shortName': b.get('shortName', {}).get('value'),
             'website': b.get('website', {}).get('value'),
             'inception': inception_display,
             'memberCount': b.get('memberCount', {}).get('value'),
+            'ideology': ideology_label,
         }
 
     # Recent zaken the fractie voted on (with their vote)
