@@ -37,7 +37,6 @@
                 {% if agreement_pct is none %}
                     <td class="text-center text-muted">—</td>
                 {% else %}
-                    {# Determine color class based on agreement percentage #}
                     {% set color_class = '' %}
                     {% if agreement_pct >= 80 %}
                         {% set color_class = 'agreement-high' %}
@@ -60,6 +59,73 @@
     </tbody>
     </table>
 
+    <hr/>
+    <div class="mt-5">
+        <h2 class="mb-4">Overeenkomsten per onderwerp</h2>
+        <div class="mb-2">
+            <label for="topicSelect">Kies onderwerp: </label>
+            <select id="topicSelect" class="form-select w-auto d-inline-block">
+                {% for topic in all_topics %}
+                    <option value="{{ topic }}">{{ topic }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div id="topicAgreementTables">
+            {% for topic in all_topics %}
+            <div class="topic-table" data-topic="{{ topic }}" style="display: {% if loop.first %}block{% else %}none{% endif %}">
+                <h5>{{ topic }}</h5>
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            {% for col_party in parties %}
+                                <th class="text-center"><a href="/fractie/{{ col_party }}" class="text-dark text-decoration-none">{{ col_party }}</a></th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row_party in parties %}
+                        <tr>
+                            <th scope="row"><a href="/fractie/{{ row_party }}" class="text-dark text-decoration-none">{{ row_party }}</a></th>
+                            {% for col_party in parties %}
+                                {% set agreement_pct = topic_agreement_tables[topic][row_party][col_party] %}
+                                {% if agreement_pct is none %}
+                                    <td class="text-center text-muted">—</td>
+                                {% else %}
+                                    {% set color_class = '' %}
+                                    {% if agreement_pct >= 80 %}
+                                        {% set color_class = 'agreement-high' %}
+                                    {% elif agreement_pct >= 60 %}
+                                        {% set color_class = 'agreement-medium-high' %}
+                                    {% elif agreement_pct >= 40 %}
+                                        {% set color_class = 'agreement-medium' %}
+                                    {% elif agreement_pct >= 20 %}
+                                        {% set color_class = 'agreement-medium-low' %}
+                                    {% else %}
+                                        {% set color_class = 'agreement-low' %}
+                                    {% endif %}
+                                    <td class="text-center {% if row_party == col_party %}font-weight-bold{% endif %} {{ color_class }}">
+                                        {{ ('%.1f'|format(agreement_pct)) }}%
+                                    </td>
+                                {% endif %}
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
 </div>
+<script>
+    const topicSelect = document.getElementById('topicSelect');
+    topicSelect.addEventListener('change', function() {
+        const selected = this.value;
+        document.querySelectorAll('.topic-table').forEach(div => {
+            div.style.display = (div.getAttribute('data-topic') === selected) ? 'block' : 'none';
+        });
+    });
+</script>
 
 {% endblock %}

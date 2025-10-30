@@ -238,48 +238,41 @@ def index():
 
 @app.route('/agreement')
 def agreement():
-    """This page will show all the agreements between the parties in a cross table."""
+    """This page will show all the agreements between the parties in a cross table, and adds crosstables per topic."""
 
+    # Get global cross-table for all zaken
     query = """
     PREFIX tk: <http://www.semanticweb.org/twanh/ontologies/2025/9/tk/>
 
     SELECT
-        ?partyA_ab                 # Abbreviation for Party A
-        ?partyB_ab                 # Abbreviation for Party B
-        (COUNT(?zaak) AS ?commonVotes)  # Total votes where both parties voted 'voor' or 'tegen'
-        (SUM(IF(?voteA = ?voteB, 1, 0)) AS ?agreements) # Count of times they voted the same
+        ?partyA_ab
+        ?partyB_ab
+        (COUNT(?zaak) AS ?commonVotes)
+        (SUM(IF(?voteA = ?voteB, 1, 0)) AS ?agreements)
         (((SUM(IF(?voteA = ?voteB, 1, 0))) * 100.0 / COUNT(?zaak)) AS ?agreementPercentage)
     WHERE {
         ?zaak a tk:Zaak .
 
-        # Get Party A's vote
         { ?partyA tk:heeftVoorGestemd ?zaak . BIND("voor" AS ?voteA) }
         UNION
         { ?partyA tk:heeftTegenGestemd ?zaak . BIND("tegen" AS ?voteA) }
-        # Get Party A's abbreviation
         ?partyA a tk:Fractie ;
                 tk:afkorting ?partyA_ab .
 
-        # Get Party B's vote on the SAME 'zaak'
         { ?partyB tk:heeftVoorGestemd ?zaak . BIND("voor" AS ?voteB) }
         UNION
         { ?partyB tk:heeftTegenGestemd ?zaak . BIND("tegen" AS ?voteB) }
-        # Get Party B's abbreviation
         ?partyB a tk:Fractie ;
                 tk:afkorting ?partyB_ab .
 
-        # Filter for unique pairs to avoid calculating both A-B and B-A.
         FILTER(?partyA_ab < ?partyB_ab)
     }
-    # Group the results for each unique party pair
     GROUP BY ?partyA_ab ?partyB_ab
-    # Order the final list alphabetically
     ORDER BY ?partyA_ab ?partyB_ab
     """
 
     results = get_db_results(query)
     agreements = []
-
     for result in results['results']['bindings']:
         agreements.append({
             'partyA_ab': result['partyA_ab']['value'],
@@ -289,7 +282,6 @@ def agreement():
             'agreementPercentage': result['agreementPercentage']['value'],
         })
 
-    # Create a dictionary for quick lookup of agreement percentages
     agreement_dict = {}
     for agreement in agreements:
         key1 = (agreement['partyA_ab'], agreement['partyB_ab'])
@@ -298,14 +290,12 @@ def agreement():
         agreement_dict[key1] = pct
         agreement_dict[key2] = pct
 
-    # Get all unique parties
     parties = set()
     for agreement in agreements:
         parties.add(agreement['partyA_ab'])
         parties.add(agreement['partyB_ab'])
     parties = sorted(list(parties))
 
-    # Create the agreement matrix
     agreement_matrix = {}
     for row_party in parties:
         agreement_matrix[row_party] = {}
@@ -318,7 +308,66 @@ def agreement():
                     key, None,
                 )
 
-    return render_template('agreement.html', parties=parties, agreement_matrix=agreement_matrix)
+    # Get cross-table for each topic
+    topic_query = """
+    PREFIX tk: <http://www.semanticweb.org/twanh/ontologies/2025/9/tk/>
+    SELECT ?topic ?partyA_ab ?partyB_ab (COUNT(?zaak) AS ?commonVotes) (SUM(IF(?voteA = ?voteB, 1, 0)) AS ?agreements)
+           (((SUM(IF(?voteA = ?voteB, 1, 0))) * 100.0 / COUNT(?zaak)) AS ?agreementPercentage)
+    WHERE {
+      ?zaak a tk:Zaak ;
+            tk:heeftOnderwerp ?onderwerp .
+      ?onderwerp tk:onderwerpType ?topic .
+      { ?partyA tk:heeftVoorGestemd ?zaak . BIND("voor" AS ?voteA) }
+      UNION
+      { ?partyA tk:heeftTegenGestemd ?zaak . BIND("tegen" AS ?voteA) }
+      ?partyA a tk:Fractie ; tk:afkorting ?partyA_ab .
+      { ?partyB tk:heeftVoorGestemd ?zaak . BIND("voor" AS ?voteB) }
+      UNION
+      { ?partyB tk:heeftTegenGestemd ?zaak . BIND("tegen" AS ?voteB) }
+      ?partyB a tk:Fractie ; tk:afkorting ?partyB_ab .
+      FILTER(?partyA_ab < ?partyB_ab)
+    }
+    GROUP BY ?topic ?partyA_ab ?partyB_ab
+    ORDER BY ?topic ?partyA_ab ?partyB_ab
+    """
+    topic_results = get_db_results(topic_query)
+    # data structure: topic -> (dict (partyA, partyB) -> %)
+    topic_agreement = {}
+    all_topics = set()
+    for res in topic_results['results']['bindings']:
+        topic = res['topic']['value']
+        partyA = res['partyA_ab']['value']
+        partyB = res['partyB_ab']['value']
+        pct = float(res['agreementPercentage']['value'])
+        all_topics.add(topic)
+        if topic not in topic_agreement:
+            topic_agreement[topic] = {}
+        topic_agreement[topic][(partyA, partyB)] = pct
+        topic_agreement[topic][(partyB, partyA)] = pct
+    all_topics = sorted(list(all_topics))
+
+    topic_agreement_tables = {}
+    for topic in all_topics:
+        topic_matrix = {}
+        for row_party in parties:
+            topic_matrix[row_party] = {}
+            for col_party in parties:
+                if row_party == col_party:
+                    topic_matrix[row_party][col_party] = 100.0
+                else:
+                    pct = topic_agreement.get(topic, {}).get(
+                        (row_party, col_party), None,
+                    )
+                    topic_matrix[row_party][col_party] = pct
+        topic_agreement_tables[topic] = topic_matrix
+
+    return render_template(
+        'agreement.html',
+        parties=parties,
+        agreement_matrix=agreement_matrix,
+        topic_agreement_tables=topic_agreement_tables,
+        all_topics=all_topics,
+    )
 
 
 @app.route('/fracties')
