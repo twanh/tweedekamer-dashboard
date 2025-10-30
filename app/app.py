@@ -10,35 +10,38 @@ app = Flask(__name__)
 
 
 def get_db_results(query):
+    """Get results from the GraphDB database."""
+
     # Docker Compose setup (uncomment when using Docker)
     sparql = SPARQLWrapper('http://graphdb:7200/repositories/tk_kb')
 
-    # Localhost for testing without Docker (comment when using Docker)
-    # sparql = SPARQLWrapper('http://localhost:7200/repositories/tk_kb')
-
     sparql.setQuery(query)
     sparql.setReturnFormat(JSON)
+
     return sparql.query().convert()
 
 
 def get_wikidata_results(query):
-    """Query Wikidata SPARQL endpoint with a proper User-Agent."""
+    """Get results from the Wikidata SPARQL endpoint."""
+
     sparql = SPARQLWrapper('https://query.wikidata.org/sparql')
+
     sparql.setQuery(query)
     sparql.setReturnFormat(JSON)
-    # Be a good citizen; identify this app
-    try:
-        sparql.setAgent(
-            'tweedekamer-dashboard/1.0 (https://github.com/; contact: example@example.com)',
-        )
-    except Exception:
-        # Older versions may not support setAgent; proceed without failing
-        pass
+
     return sparql.query().convert()
 
 
 @app.route('/')
 def index():
+    """Render the index page.
+
+    Index page shows: 
+        - Number of zaken per month per zaak type
+        - Number of zaken per month per topic
+        - Stemgedrag per party (Voor/Tegen/Niet Deelgenomen)
+        - Aangenomen vs Verworpen per topic
+    """
 
     # Query to get number of zaken per month per zaak type
     zaken_per_type_query = """
@@ -68,7 +71,10 @@ def index():
     """
 
     zaken_per_type_results = get_db_results(zaken_per_type_query)
+    # We transform the results from the queries to a better format for the frontend
     zaken_per_type_per_month = []
+    # For each result, add a new entry to the zaken_per_type_per_month list
+
     for result in zaken_per_type_results['results']['bindings']:
         jaar = int(result['jaar']['value'])
         maand = int(result['maand']['value'])
@@ -81,31 +87,23 @@ def index():
             'aantal': aantal,
         })
 
+    # Query to get number of zaken per month per topic
     topics_over_time_query = """
     PREFIX tk: <http://www.semanticweb.org/twanh/ontologies/2025/9/tk/>
     PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
     PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
-    # Select the time (year, month), the category (topicName), and the value (aantalZaken)
     SELECT ?jaar ?maand ?topicName (COUNT(DISTINCT ?zaak) AS ?aantalZaken)
     WHERE {
-    # Find a Zaak that is linked to a topic (Onderwerp)
+
     ?zaak tk:heeftOnderwerp ?onderwerp .
-
-    # Get the human-readable name of that topic
     ?onderwerp tk:onderwerpType ?topicName .
-
-    # Get the submission date of the Zaak
     ?zaak tk:indieningsDatum ?datum .
 
-    # Extract Year and Month for grouping
     BIND(YEAR(?datum) AS ?jaar)
     BIND(MONTH(?datum) AS ?maand)
     }
-    # Group by all three variables to get the count *per topic* *per month*
     GROUP BY ?jaar ?maand ?topicName
-
-    # Order chronologically, then by topic name for a consistent stack order
     ORDER BY ?jaar ?maand ?topicName
     """
 
@@ -331,7 +329,8 @@ def agreement():
     ORDER BY ?topic ?partyA_ab ?partyB_ab
     """
     topic_results = get_db_results(topic_query)
-    # data structure: topic -> (dict (partyA, partyB) -> %)
+
+    # We transform the results from the queries to a better format for the frontend
     topic_agreement = {}
     all_topics = set()
     for res in topic_results['results']['bindings']:
@@ -397,10 +396,9 @@ def fracties():
 
 @app.route('/fractie/<path:fractie_naam>')
 def fractie_detail(fractie_naam):
-    # Decode the URL-encoded party name
+
     decoded_fractie_naam = unquote(fractie_naam)
 
-    # This corrected query uses only the BIND method to define the count variables
     query = f"""
     PREFIX tk: <http://www.semanticweb.org/twanh/ontologies/2025/9/tk/>
 
@@ -421,7 +419,6 @@ def fractie_detail(fractie_naam):
       ?onderwerp tk:onderwerpType ?onderwerpType .
 
       # Use BIND to conditionally link zaken to vote types for counting.
-      # This is the single, correct place to define these variables.
       BIND(IF(?voteProperty = tk:heeftVoorGestemd, ?zaak, 1/0) AS ?zaakVoor)
       BIND(IF(?voteProperty = tk:heeftTegenGestemd, ?zaak, 1/0) AS ?zaakTegen)
       BIND(IF(?voteProperty = tk:heeftNietDeelgenomen, ?zaak, 1/0) AS ?zaakNietDeelgenomen)
@@ -494,7 +491,6 @@ def fractie_detail(fractie_naam):
     wikidata_info = None
     if wikidata_res and wikidata_res.get('results', {}).get('bindings'):
         b = wikidata_res['results']['bindings'][0]
-        # Format inception date nicely if present
         inception_raw = b.get('inception', {}).get('value')
         inception_display = None
         if inception_raw:
@@ -504,12 +500,9 @@ def fractie_detail(fractie_naam):
             except Exception:
                 inception_display = inception_raw
 
-        # Get Dutch label for ideology if available
         ideology_label = None
         ideology_raw = b.get('ideologyLabel', {}).get('value')
         if ideology_raw:
-            # Extract the label value (SPARQL returns labels with language tags)
-            # The label should already be filtered to Dutch in the query
             ideology_label = ideology_raw
 
         wikidata_info = {
@@ -592,8 +585,6 @@ def zaken_lijst():
     per_page = 20
     offset = (page - 1) * per_page
 
-    # SPARQL query om filteropties (dropdowns) op te halen - optimized to use separate queries
-    # This is faster than one query with OPTIONALs that can cause cartesian products
     besluit_query = """
     PREFIX tk: <http://www.semanticweb.org/twanh/ontologies/2025/9/tk/>
     SELECT DISTINCT ?besluitResultaat WHERE {
@@ -638,8 +629,10 @@ def zaken_lijst():
         'Other',
     ]
 
-    # Optimized query structure: apply filters early and use DISTINCT to avoid duplicates
-    # Build the base pattern and filters
+    # Note: We build the query step by step, because this way we can optimize the
+    # query a bit more. In early testing this page took over 10seconds to load because 
+    # of the large amount of data and the query that did a lot of heavy lifting.
+
     base_patterns = [
         '?zaak a tk:Zaak',
         '?zaak tk:nummer ?zaakNummer',
@@ -658,19 +651,14 @@ def zaken_lijst():
             f'FILTER (?indieningsDatum <= "{end_date}"^^xsd:date)',
         )
 
-    # Handle onderwerp filter - if filtering by onderwerp, make it required (not optional)
-    # When not filtering, use simple optional to avoid performance issues
     onderwerp_pattern = ''
     if onderwerp_filter:
-        # If filtering by onderwerp, make it required for better performance
         base_patterns.append('?zaak tk:heeftOnderwerp ?onderwerp')
         base_patterns.append('?onderwerp tk:onderwerpType ?onderwerpType')
         early_filters.append(f'FILTER (?onderwerpType = "{onderwerp_filter}")')
     else:
-        # Simple optional - DISTINCT will handle duplicates
         onderwerp_pattern = 'OPTIONAL { ?zaak tk:heeftOnderwerp ?onderwerp . ?onderwerp tk:onderwerpType ?onderwerpType . }'
 
-    # Optional fields (applied after filtering reduces result set)
     optional_patterns = []
     if not resultaat_filter:
         optional_patterns.append('?zaak tk:besluitResultaat ?besluitResultaat')
@@ -686,7 +674,7 @@ def zaken_lijst():
         base_patterns.append('?zaak tk:zaakSoort ?zaakSoort')
         early_filters.append(f'FILTER (?zaakSoort = "{zaak_type_filter}")')
 
-    # Build the query with optimal structure
+    # We join the base patterns, early filters and optional patterns 
     where_clause = ' .\n        '.join(base_patterns) + ' .'
     if early_filters:
         where_clause += '\n        ' + '\n        '.join(early_filters)
@@ -696,13 +684,11 @@ def zaken_lijst():
     if onderwerp_pattern and not onderwerp_filter:
         where_clause += '\n        ' + onderwerp_pattern
 
-    # Main query with pagination - using DISTINCT to prevent duplicates from multiple onderwerpen
-    # Fetch extra items when not filtering by onderwerp to account for potential duplicates
     limit = per_page + 1
     if not onderwerp_filter:
-        # Fetch more to account for possible duplicates from multiple onderwerpen per zaak
         limit = per_page + 5
 
+    # We build the final query
     query = f"""
     PREFIX tk: <http://www.semanticweb.org/twanh/ontologies/2025/9/tk/>
     PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
@@ -716,8 +702,6 @@ def zaken_lijst():
     results = get_db_results(query)
     bindings = results['results']['bindings']
 
-    # Deduplicate by zaakNummer to avoid showing same zaak multiple times (from multiple onderwerpen)
-    # Keep track of seen zaakNummers to maintain pagination integrity
     seen_zaken = set()
     unique_bindings = []
     for result in bindings:
@@ -727,8 +711,6 @@ def zaken_lijst():
             unique_bindings.append(result)
 
     # Determine if there is a next page
-    # If we have more unique results than per_page, there's definitely a next page
-    # If we have exactly per_page unique results but fetched more, there might be more
     has_next = len(unique_bindings) > per_page
     if has_next or (len(bindings) == limit and len(unique_bindings) == per_page):
         # If we fetched the full limit and still got a full page after dedup, likely more exist
@@ -750,7 +732,6 @@ def zaken_lijst():
 
     # Calculate pagination info without running a heavy COUNT query
     has_prev = page > 1
-    # total count unknown in this lightweight mode
     total_zaken = None
     total_pages = None
 
@@ -944,58 +925,6 @@ def persoon_detail(persoon_naam):
         recent_zaken=recent_zaken,
     )
 
-# @app.route('/zaken')
-# def zaken():
-#     # Example Query: Get all zaken with their titles and onderwerpen
-#     query = """
-#     SELECT ?zaak ?titel ?beschrijving ?besluitResultaat ?besluitStemmingsoort ?dossierNummer ?indieningsDatum
-#        ?isAfgedaan ?kabinetsappreciatie ?nummer ?termijn ?uuid ?volgnummer ?zaakSoort ?title
-#     WHERE {
-#     ?zaak a tk:Zaak .
-
-#     OPTIONAL { ?zaak tk:titel ?titel . }
-#     OPTIONAL { ?zaak tk:beschrijving ?beschrijving . }
-#     OPTIONAL { ?zaak tk:besluitResultaat ?besluitResultaat . }
-#     OPTIONAL { ?zaak tk:besluitStemmingsoort ?besluitStemmingsoort . }
-#     OPTIONAL { ?zaak tk:dossierNummer ?dossierNummer . }
-#     OPTIONAL { ?zaak tk:indieningsDatum ?indieningsDatum . }
-#     OPTIONAL { ?zaak tk:isAfgedaan ?isAfgedaan . }
-#     OPTIONAL { ?zaak tk:kabinetsappreciatie ?kabinetsappreciatie . }
-#     OPTIONAL { ?zaak tk:nummer ?nummer . }
-#     OPTIONAL { ?zaak tk:termijn ?termijn . }
-#     OPTIONAL { ?zaak tk:uuid ?uuid . }
-#     OPTIONAL { ?zaak tk:volgnummer ?volgnummer . }
-#     OPTIONAL { ?zaak tk:zaakSoort ?zaakSoort . }
-#     }
-
-#     """
-
-#     results = get_db_results(query)
-#     zaken = []
-
-#     for result in results['results']['bindings']:
-#         zaken.append({
-#             'titel': result.get('titel', {}).get('value', 'Geen titel gevonden.'),
-#             'beschrijving': result.get('beschrijving', {}).get('value', 'Geen beschrijving gevonden.'),
-#             'besluitResultaat': result.get('besluitResultaat', {}).get('value', 'Geen besluitResultaat gevonden.'),
-#             'besluitStemmingsoort': result.get('besluitStemmingsoort', {}).get('value', 'Geen besluitStemmingsoort gevonden.'),
-#             'dossierNummer': result.get('dossierNummer', {}).get('value', 'Geen dossierNummer gevonden.'),
-#             'indieningsDatum': result.get('indieningsDatum', {}).get('value', 'Geen indieningsDatum gevonden.'),
-#             'isAfgedaan': result.get('isAfgedaan', {}).get('value', 'Geen isAfgedaan gevonden.'),
-#             'kabinetsappreciatie': result.get('kabinetsappreciatie', {}).get('value', 'Geen kabinetsappreciatie gevonden.'),
-#             'nummer': result.get('nummer', {}).get('value', 'Geen nummer gevonden.'),
-#             'termijn': result.get('termijn', {}).get('value', 'Geen termijn gevonden.'),
-#             'uuid': result.get('uuid', {}).get('value', 'Geen uuid gevonden.'),
-#             'volgnummer': result.get('volgnummer', {}).get('value', 'Geen volgnummer gevonden.'),
-#             'zaakSoort': result.get('zaakSoort', {}).get('value', 'Geen zaakSoort gevonden.'),
-#         })
-
-#     return render_template('zaken.html', zaken=zaken)
-
 
 if __name__ == '__main__':
-    # Docker Compose setup (uncomment when using Docker)
     app.run(host='0.0.0.0', debug=True)
-
-    # Localhost with specified port (for Macbook compatibility since port 5000 is sometimes in use), comment when using Docker
-    # app.run(host='0.0.0.0', port=8000, debug=True)
